@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f344fd9e0d25541973ec56d7d00626, type: 3}
+  m_Name: StandardGun
+  m_EditorClassIdentifier: 
+  WeaponName: StandardGun
+  AttackPrefab: {fileID: 9182705347818708948, guid: 76162aa1340ec824aa125d955dba081b, type: 3}
+  FireRate: 0.5
+  AttackSpeed: 8
+  ShotLogic: {fileID: 11400000, guid: 2a5336f410a2aec49baa84a3dd753640, type: 2}
+  FireSE: {fileID: 8300000, guid: a979b924b379f6b488d85fcb7399e4d7, type: 3}
+  MuzzleEffect: {fileID: 0}
+  WeaponImage: {fileID: 0}

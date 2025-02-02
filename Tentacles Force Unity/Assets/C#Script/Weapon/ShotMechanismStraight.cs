@@ -2,9 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShotMechanismStraight : IWeaponShotMechanism
+/// <summary>
+/// IWeaponShotMechanism継承：一直線に発射する動作
+/// </summary>
+
+[CreateAssetMenu(fileName = "StraightShotMechanism", menuName = "WeaponLogic/Straight")]
+public class ShotMechanismStraight : ShotMechanism
 {
-    public void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null)
+    public override void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null)
     {
         GameObject instance = Object.Instantiate(prefab, shotPoint.transform.position, shotPoint.transform.rotation);
         Rigidbody2D rb = instance.GetComponent<Rigidbody2D>();

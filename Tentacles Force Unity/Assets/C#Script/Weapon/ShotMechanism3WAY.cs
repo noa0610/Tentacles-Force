@@ -2,11 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShotMechanism3WAY : IWeaponShotMechanism
+/// <summary>
+/// IWeaponShotMechanism継承：3方向に発射する動作
+/// </summary>
+
+[CreateAssetMenu(fileName = "ThreeWayShotMechanism", menuName = "WeaponLogic/ThreeWay")]
+public class ShotMechanism3WAY : ShotMechanism
 {
     private float spreadAngle = 30f; // 発射角度の間隔
     private int bulletCount = 3;     // 発射する弾の数 
-    public void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null)
+    public override void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null)
     {
         for (int i = 0; i < bulletCount; i++)
         {

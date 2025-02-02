@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// 入力状況を渡すスクリプト
 /// </summary>
-public class PlayerInput: MonoBehaviour
+public class PlayerInput : MonoBehaviour
 {
     private InputInfo _inputInfo;
     private Player _player;
@@ -22,8 +22,9 @@ public class PlayerInput: MonoBehaviour
     private void Update()
     {
         _player.InputInfo = _inputInfo; // 入力の状況を渡す
-        
-        // Debug.Log($"Move{_inputInfo.Move}");
+
+        // Debug.Log($"Move:{_inputInfo.Move}");
+        // Debug.Log($"Jump:{_inputInfo.Jump}");
         // Debug.Log($"Attack:{_inputInfo.Attack}");
         // Debug.Log($"Skill:{_inputInfo.Skill}");
         // Debug.Log($"Spcial:{_inputInfo.Spcial}");
@@ -38,10 +39,14 @@ public class PlayerInput: MonoBehaviour
         var input = value.Get<Vector2>();
         _inputInfo.Move = new Vector3(input.x, input.y, 0);
     }
-
-    private void OnAttack() // 攻撃入力受け取り
+    private void OnJump() // ジャンプ入力受け取り
     {
-        _inputInfo.Attack = true;
+        _inputInfo.Jump = true;
+    }
+
+    private void OnAttack(InputValue value) // 攻撃入力受け取り(InputValueで長押し可能)
+    {
+        _inputInfo.Attack = value.isPressed;
     }
 
     private void OnSkill() // スキル入力受け取り
@@ -66,8 +71,8 @@ public class PlayerInput: MonoBehaviour
 
     private void InputClear()
     {
+        _inputInfo.Jump = false;
         _inputInfo.Skill = false;
-        _inputInfo.Attack = false;
         _inputInfo.Spcial = false;
         _inputInfo.Change = false;
         _inputInfo.Pose = false;

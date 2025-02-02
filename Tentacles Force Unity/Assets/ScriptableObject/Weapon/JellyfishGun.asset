@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37f344fd9e0d25541973ec56d7d00626, type: 3}
+  m_Name: JellyfishGun
+  m_EditorClassIdentifier: 
+  WeaponName: JellyfishGun
+  AttackPrefab: {fileID: 623117343750650236, guid: 3a82aaa2baf7e85438dcfb0cbca2a6bf, type: 3}
+  FireRate: 1
+  AttackSpeed: 7
+  ShotLogic: {fileID: 0}
+  FireSE: {fileID: 8300000, guid: a979b924b379f6b488d85fcb7399e4d7, type: 3}
+  MuzzleEffect: {fileID: 7795062556780432690, guid: 9d0da318427ef9b47b49c2dcdd4ada28, type: 3}
+  WeaponImage: {fileID: 21300000, guid: 44fc07f357270bb4d829c5877ca0b4df, type: 3}

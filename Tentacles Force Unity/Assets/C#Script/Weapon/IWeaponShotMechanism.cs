@@ -5,5 +5,6 @@ using UnityEngine;
 // 弾の発射動作のインターフェース
 public interface IWeaponShotMechanism
 {
+    // 発射のメソッド
     void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null);
 }

@@ -8,87 +8,85 @@ public class Weapon : MonoBehaviour
 {
     [SerializeField] WeaponDate weaponData; // 武器データ
     [SerializeField] GameObject ShotPoint; // 発射位置
+    public bool IsTrigger { get; set; } // 発射トリガー
 
-    public bool IsTrigger {get; set;}
-    private SpriteRenderer _SpriteRenderer;
-    private GameObject effect;
+    private float lastFireTime; // 最後に発射した時刻
+    private SpriteRenderer _SpriteRenderer; // 画像変更
+    private GameObject effect; // 発射位置に追従する発射エフェクト
+    private AudioSource _audioSource; // 効果音
     void Start()
     {
+        // スプライトの変更
         if (weaponData.WeaponImage != null)
         {
-            // スプライトを変更
             _SpriteRenderer = GetComponent<SpriteRenderer>();
             _SpriteRenderer.sprite = weaponData.WeaponImage;
         }
+
+        // 最初の発射ができるよう調整
+        lastFireTime = -weaponData.FireRate;
 
         // 発射位置の設定
         if (ShotPoint == null)
         {
             ShotPoint = this.gameObject;
         }
+
+        // 効果音の設定
+        if (weaponData.FireSE != null)
+        {
+            _audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     void Update()
     {
-        if (IsTrigger)
+        // トリガーが押されて発射間隔の時間が空いている時
+        if (IsTrigger && CanFire())
         {
-            // 攻撃を発射
-            FireBulletAttack(ShotPoint, 
-                             weaponData.AttackPrefab, 
-                             weaponData.AttackSpeed, 
-                             weaponData.MuzzleEffect);
+            FireWeapon(); // 攻撃プレハブを発射
+
+            // 音を再生
+            if (weaponData.FireSE != null)
+            {
+                _audioSource.PlayOneShot(weaponData.FireSE);
+            }
         }
 
-        // エフェクトの位置を揃える
-        if(effect != null)
+        // エフェクトの位置を発射位置に揃える
+        if (effect != null)
         {
+
             effect.transform.position = ShotPoint.transform.position;
         }
+
+
     }
 
-    // 弾を発射
-    private void FireBulletAttack(GameObject shotPoint, GameObject prefab, float speed, ParticleSystem fireeffect)
+    // 現在の時間と最後に発射した時間で発射間隔の時間が空いているか判定
+    private bool CanFire()
     {
-        // 攻撃プレハブを生成
-        GameObject instance = Instantiate(prefab, 
-                                          shotPoint.transform.position, 
-                                          shotPoint.transform.rotation);
-
-        // 発射方向設定
-        float direction = transform.localScale.x > 0 ? 1f : -1f;
-
-        // 攻撃プレハブのリジッドボディ取得
-        Rigidbody2D rb = GetRigidbody2D(instance);
-
-        // キネマティックをオン
-        rb.isKinematic = true;
-
-        // 弾のプレハブを移動させる
-        rb.velocity = new Vector2(direction * speed, rb.velocity.y);
-
-        // エフェクトのプレハブを生成
-        effect = Instantiate(fireeffect.gameObject, 
-                                            shotPoint.transform.position, 
-                                            fireeffect.gameObject.transform.rotation);
-
-        // エフェクトをすぐに削除
-        Destroy(effect, 0.5f);
+        return Time.time - lastFireTime >= weaponData.FireRate;
     }
 
-    // オブジェクトのリジッドボディを取得
-    private Rigidbody2D GetRigidbody2D(GameObject gameObject)
+    private void FireWeapon()
     {
-        Rigidbody2D rb;
-        if (gameObject.GetComponent<Rigidbody2D>())
+        // 発射ロジックの実行
+        weaponData.ShotLogic.Fire(ShotPoint,
+                                    weaponData.AttackPrefab,
+                                    weaponData.AttackSpeed);
+
+        // 発射時刻を更新
+        lastFireTime = Time.time;
+
+        // 発射エフェクトの生成
+        if (weaponData.MuzzleEffect != null)
         {
-            Debug.Log("Rigidbody2D有りのプレハブ");
-            rb = gameObject.GetComponent<Rigidbody2D>();
+            // エフェクトプレハブを生成
+            GameObject effect = Instantiate(weaponData.MuzzleEffect.gameObject,
+                                            ShotPoint.transform.position,
+                                            weaponData.MuzzleEffect.transform.rotation);
+            Destroy(effect, 0.5f); // エフェクトプレハブを一定時間後に削除
         }
-        else
-        {
-            Debug.Log("Rigidbody2D無しのプレハブ");
-            rb = gameObject.AddComponent<Rigidbody2D>(); // リジッドボディ追加
-        }
-        return rb;
     }
 }

@@ -8,6 +8,7 @@ using UnityEngine;
 public class InputInfo
 {
     public Vector2 Move {get; set;}
+    public bool Jump {get; set;}
     public bool Attack {get; set;}
     public bool Skill {get; set;}
     public bool Spcial {get; set;}

@@ -14,7 +14,7 @@ public class WeaponDate : ScriptableObject
     public float AttackSpeed;           // 攻撃の移動速度
 
     [Header("発射機構")]
-    public IWeaponShotMechanism AttackLogic; // 発射ロジック
+    public ShotMechanism ShotLogic; // 発射ロジック
     
     [Header("効果")]
     public AudioClip FireSE;            // 発射音

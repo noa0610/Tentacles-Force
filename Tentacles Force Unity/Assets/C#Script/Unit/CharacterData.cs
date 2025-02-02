@@ -11,6 +11,7 @@ public class BaseCharacterData : ScriptableObject
     [Header("ステータス")]
     public int MaxHP;                    // 最大HP
     public float MoveSpeed;              // 移動速度
+    public float JumpForce;              // ジャンプ力
     public UnitDate.Team UnitTeam;       // 敵か味方か
 
     [Header("演出効果")]
@@ -19,18 +20,4 @@ public class BaseCharacterData : ScriptableObject
 
     [Header("見た目")]
     public Sprite CharacterImage;        // キャラクターの画像
-}
-
-[CreateAssetMenu(fileName = "NewPlayerData", menuName = "CharacterData/PlayerData")]
-public class PlayerCharacterData : BaseCharacterData
-{
-    [Header("固有アクション")]
-    public AudioClip SpecialMoveSE;    // 特殊技の効果音
-}
-
-[CreateAssetMenu(fileName = "NewEnemyData", menuName = "CharacterData/EnemyData")]
-public class EnemyData : BaseCharacterData
-{
-
-    public int ScoreValue;             // 倒した際のスコア
 }
