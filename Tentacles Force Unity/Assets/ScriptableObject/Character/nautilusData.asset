@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 233fb981672aea74eb4c473cea51bfb3, type: 3}
-  m_Name: JellyfishData
+  m_Name: nautilusData
   m_EditorClassIdentifier: 
-  CharacterName: Jellyfish
+  CharacterName: Nautilus
   MaxHP: 150
-  MoveSpeed: 7
-  JumpForce: 10
+  MoveSpeed: 6
+  JumpForce: 15
   UnitTeam: 1
   DestroySE: {fileID: 0}
   DestroyEffect: {fileID: 0}
-  CharacterImage: {fileID: 21300000, guid: 435963e683edcb7448c45b3e945a6395, type: 3}
+  CharacterImage: {fileID: 21300000, guid: 1c28ee8d41cd42741a829bd07105a128, type: 3}
   SpecialMoveSE: {fileID: 0}

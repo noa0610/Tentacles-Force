@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// オブジェクトを自然に伸ばすスクリプト
 /// </summary>
-public class StretchableObject : MonoBehaviour
+public class StretchableLine : MonoBehaviour
 {
     private GameObject Player;
     private float maxStretchLength; // 伸びる長さの上限

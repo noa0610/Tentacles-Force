@@ -1,13 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
-/// <summary>
-/// テンタクルスジャンプテスト用スクリプト
-/// </summary>
-public class TentaclesJump : MonoBehaviour
+public class HookJump : MonoBehaviour
 {
     // 基本アクション用フィールド
     [SerializeField] private float MoveSpeed = 7;    // 移動速度
@@ -15,20 +10,13 @@ public class TentaclesJump : MonoBehaviour
     [SerializeField] private GameObject GroundCheck; // 地面チェック用オブジェクト
     [SerializeField] private LayerMask GroundLayer;  // 地面判定用レイヤー
     private bool _isGround;                          // 地面にいるかどうか
-    private Rigidbody2D _rigidbody2d; 
-    
+    private Rigidbody2D _rigidbody2d;
 
 
     // 円周上でオブジェクトを移動させる用フィールド
     [SerializeField] private GameObject ObjectB;  // 円周上に配置するオブジェクト
     [SerializeField] private float radius = 2.0f; // 円の半径
     [SerializeField] private int segments = 100;  // 円をギズモ表示する線の分割数
-
-
-    // マウスの方向にゲームオブジェクトを飛ばす用フィールド
-    [SerializeField] private GameObject Attack;    // プレハブ
-    [SerializeField] private float ShotSpeed = 7f; // プレハブを飛ばす速度
-    private Camera _camera;                        // マウス座標取得用カメラ
 
 
     // マウスの方向にオブジェクトを伸縮させる用フィールド
@@ -40,11 +28,22 @@ public class TentaclesJump : MonoBehaviour
     [SerializeField] private float MaxStretchLength = 3.0f; // オブジェクトの長さの上限
     [SerializeField] private float HoldTime = 0.5f;         // 最大まで伸びた後の待機時間
     /*------------------------------------------------------------------------------*/
+    private Camera _camera;                                 // マウス座標取得用カメラ
 
 
-    // 伸ばしたオブジェクトの先端と逆方向にプレイヤーが移動する用フィールド
-    private bool isJumping = false; // TentacleHookでのジャンプ中かどうか
+    // フックを飛ばす用フィールド
+    [SerializeField] private float hookSpeed = 20f; // フックの速度
+    [SerializeField] private float moveSpeed = 30f; // プレイヤーの移動速度
 
+
+    // 壁張り付き用フィールド
+    [SerializeField] private GameObject WallCheck; // 前方の壁チェック用オブジェクト
+    private bool _isWallMounted; // 壁取得判定
+
+    private GameObject currentStretchableObject;
+    private GameObject currentHook;
+    private bool isMoving = false;
+    private Vector3 targetPosition;
 
     void Awake()
     {
@@ -54,6 +53,11 @@ public class TentaclesJump : MonoBehaviour
             GroundCheck = gameObject;
         }
         _camera = Camera.main;
+
+        // // 物理マテリアルの数値を変更
+        // PhysicsMaterial2D material = _rigidbody2d.sharedMaterial;
+        // material.friction = 0.005f;
+        // material.bounciness = 0f;
     }
 
     void Update()
@@ -64,18 +68,24 @@ public class TentaclesJump : MonoBehaviour
         // プレハブ生成位置をマウスの方向に移動
         RoundMoveObject();
 
-
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Input.GetMouseButtonDown(0) && currentStretchableObject == null)
         {
-            // オブジェクトをオブジェクトBからマウスの方向に発射
-            // ShootObject();
-
             // オブジェクトをオブジェクトBからマウスの方向に伸び縮みさせる
             ShootStretchableObject();
         }
+
+        Debug.Log(isMoving);
+
+        if (isMoving)
+        {
+            Debug.Log("HitChack");
+            MoveToHook();
+        }
     }
 
-    // オブジェクトを円周上で移動
+    /// <summary>
+    /// オブジェクトを円周上で移動
+    /// </summary>
     private void RoundMoveObject()
     {
         // マウス座標取得（ワールド座標に変換）
@@ -105,52 +115,9 @@ public class TentaclesJump : MonoBehaviour
         ObjectB.transform.rotation = Quaternion.Euler(ObjectB.transform.rotation.x, ObjectB.transform.rotation.y, angle - 90);
     }
 
-    // 伸縮するオブジェクトを生成するスクリプト
-    private void ShootStretchableObject()
-    {
-        Vector3 mousePos = _camera.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0;
-
-        // 方向を計算
-        Vector3 direction = (mousePos - ObjectB.transform.position).normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
-        // 伸びるオブジェクトを生成し、方向をセット
-        GameObject instance = Instantiate(LongShotPrefab, ObjectB.transform.position, Quaternion.Euler(0, 0, angle));
-
-        // `StretchableLine` にパラメータを渡して処理開始
-        StretchableLine stretchable = instance.GetComponent<StretchableLine>();
-        if (stretchable != null)
-        {
-            stretchable.Initialize(MaxStretchLength, StretchSpeed, RetractSpeed, HoldTime);
-        }
-    }
-
-    // オブジェクトBの位置の回転を取得してプレハブオブジェクトを発射
-    private void ShootObject()
-    {
-        GameObject instance = Instantiate(Attack,
-                                              ObjectB.transform.position,
-                                              ObjectB.transform.rotation);
-
-        // オブジェクトBの前方向を取得（Z軸回転 +90 度で上向きと一致）
-        float forwardAngle = ObjectB.transform.eulerAngles.z + 90;
-        // 弾の移動方向を計算
-        Vector2 direction = new Vector2(
-            Mathf.Cos(forwardAngle * Mathf.Deg2Rad),
-            Mathf.Sin(forwardAngle * Mathf.Deg2Rad))
-            .normalized; // ベクトルを単位ベクトル化
-
-        // Rigidbody2Dを取得（なければ追加）
-        Rigidbody2D rb = instance.GetComponent<Rigidbody2D>() ?? instance.AddComponent<Rigidbody2D>();
-
-        // 速度を設定
-        rb.velocity = direction * ShotSpeed;
-        Debug.Log($"rb.velocity : {rb.velocity}");
-        Destroy(instance, 2f);
-    }
-
-    // 円のギズモ表示
+    /// <summary>
+    /// 円のギズモ表示
+    /// </summary>
     private void OnDrawGizmos()
     {
         if (segments < 3) return; // 最低3点必要（多角形になるため）
@@ -175,34 +142,76 @@ public class TentaclesJump : MonoBehaviour
         }
     }
 
-    // TentacleHook から呼び出されるメソッド
-    public void ApplyTentacleJump(Vector2 jumpForce)
+    /// <summary>
+    /// 伸縮するオブジェクトを生成するスクリプト
+    /// </summary>
+    private void ShootStretchableObject()
     {
-        isJumping = true; // TentacleHookのジャンプ中はX軸移動を無効化
-        _rigidbody2d.velocity = Vector2.zero; // 速度リセット（現在の影響を排除）
-        _rigidbody2d.AddForce(jumpForce, ForceMode2D.Impulse);
-        // Invoke(nameof(ResetJump), 0.3f);
+        Vector3 mousePos = _camera.ScreenToWorldPoint(Input.mousePosition);
+        mousePos.z = 0;
+
+        // 方向を計算
+        Vector3 direction = (mousePos - ObjectB.transform.position).normalized;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        // 伸びるオブジェクトを生成し、方向をセット
+        currentStretchableObject  = Instantiate(LongShotPrefab, ObjectB.transform.position, Quaternion.Euler(0, 0, angle));
+
+        // `StretchableLine`を取得
+        StretchableLine stretchable = currentStretchableObject.GetComponent<StretchableLine>();
+        if (stretchable != null)
+        {
+            // `StretchableLine`に数値を渡す
+            stretchable.Initialize(MaxStretchLength, StretchSpeed, RetractSpeed, HoldTime);
+        }
     }
 
-    private void ResetJump()
+
+    /// <summary>
+    /// フックがヒットしたら移動開始
+    /// </summary>
+    public void OnHookHit(Vector3 hitPosition)
     {
-        isJumping = false; // 通常の移動を再開
+        if (currentStretchableObject != null)
+        {
+            targetPosition = hitPosition;
+            isMoving = true;
+        }
+    }
+    /// <summary>
+    /// プレイヤーをフックの位置へ移動
+    /// </summary>
+    private void MoveToHook()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+        Debug.Log("HookJump");
+
+        // フックの当たった位置に近づいたら移動を解除
+        if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
+        {
+            HookForceJump();
+            isMoving = false;
+            Destroy(currentStretchableObject);
+            currentStretchableObject = null;  // 変数をリセット
+        }
     }
 
 
 
-    // 基本移動能力管理メソッド
+    /// <summary>
+    /// 基本移動能力管理メソッド
+    /// </summary>
     private void PlayerMoveInput()
     {
         // 地面判定取得
         CheckGround();
 
-        if(Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
-        {
-            Invoke(nameof(ResetJump),0f);
-        }
+        // if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
+        // {
+        //     Invoke(nameof(ResetJump), 0f);
+        // }
 
-        if (!isJumping) // TentacleHookジャンプ中は操作を無効化
+        if (!isMoving) // Hookジャンプ中は操作を無効化
         {
             // 左右移動
             if (Input.GetKey(KeyCode.A))
@@ -226,14 +235,20 @@ public class TentaclesJump : MonoBehaviour
         }
     }
 
-    // プレイヤーの左右移動
+    /// <summary>
+    /// プレイヤーの左右移動
+    /// </summary>
+    /// <param name="direction"></param>
     public void SideMove(Vector3 direction)
     {
         _rigidbody2d.velocity = new Vector2(direction.x * MoveSpeed, _rigidbody2d.velocity.y);
         Direction(direction);
     }
 
-    // 向き変更
+    /// <summary>
+    /// 向き変更
+    /// </summary>
+    /// <param name="direction"></param>
     public void Direction(Vector3 direction)
     {
         // 入力がない場合は処理を終了
@@ -244,7 +259,9 @@ public class TentaclesJump : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, rotationY, 0);
     }
 
-    // ジャンプ処理
+    /// <summary>
+    /// ジャンプ処理
+    /// </summary>
     public void GroundJump()
     {
         if (_isGround)
@@ -254,20 +271,28 @@ public class TentaclesJump : MonoBehaviour
         }
     }
 
-    // 地面判定取得
+    private void HookForceJump()
+    {
+        _rigidbody2d.velocity = new Vector2(_rigidbody2d.velocity.x, JumpForce);
+    }
+
+    /// <summary>
+    /// 地面判定取得
+    /// </summary>
     private void CheckGround()
     {
         float rayLength = 0.5f;
         _isGround = Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
-        
-        if(isJumping)
-        {
-            isJumping = !Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
-        }
-        
+
+        // if(isJumping)
+        // {
+        //     isJumping = !Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
+        // }
+
 
         Debug.Log($"ChackGround : {_isGround}");
         // レイを表示（緑で表示、判定取得で赤で表示）
         Debug.DrawRay(GroundCheck.transform.position, Vector2.down * rayLength, _isGround ? Color.green : Color.red);
     }
 }
+

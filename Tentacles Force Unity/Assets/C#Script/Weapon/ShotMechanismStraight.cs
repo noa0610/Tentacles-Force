@@ -6,7 +6,7 @@ using UnityEngine;
 /// IWeaponShotMechanism継承：一直線に発射する動作
 /// </summary>
 
-[CreateAssetMenu(fileName = "StraightShotMechanism", menuName = "WeaponLogic/Straight")]
+[CreateAssetMenu(fileName = "StraightShotMechanism", menuName = "WeaponMechanism/Straight")]
 public class ShotMechanismStraight : ShotMechanism
 {
     public override void Fire(GameObject shotPoint, GameObject prefab, float speed, Transform target = null)

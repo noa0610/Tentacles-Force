@@ -6,7 +6,7 @@ using UnityEngine;
 /// IWeaponShotMechanism継承：3方向に発射する動作
 /// </summary>
 
-[CreateAssetMenu(fileName = "ThreeWayShotMechanism", menuName = "WeaponLogic/ThreeWay")]
+[CreateAssetMenu(fileName = "ThreeWayShotMechanism", menuName = "WeaponMechanism/ThreeWay")]
 public class ShotMechanism3WAY : ShotMechanism
 {
     private float spreadAngle = 30f; // 発射角度の間隔

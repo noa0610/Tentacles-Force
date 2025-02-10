@@ -16,7 +16,7 @@ MonoBehaviour:
   AttackPrefab: {fileID: 623117343750650236, guid: 3a82aaa2baf7e85438dcfb0cbca2a6bf, type: 3}
   FireRate: 1
   AttackSpeed: 7
-  ShotLogic: {fileID: 0}
+  ShotLogic: {fileID: 11400000, guid: af324683dae124a4bac7c4a1deaa807e, type: 2}
   FireSE: {fileID: 8300000, guid: a979b924b379f6b488d85fcb7399e4d7, type: 3}
   MuzzleEffect: {fileID: 7795062556780432690, guid: 9d0da318427ef9b47b49c2dcdd4ada28, type: 3}
   WeaponImage: {fileID: 21300000, guid: 44fc07f357270bb4d829c5877ca0b4df, type: 3}

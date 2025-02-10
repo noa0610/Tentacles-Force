@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// プレイヤーをこのオブジェクトへのベクトルの逆方向に移動させる
 /// </summary>
-public class TentacleHook : MonoBehaviour
+public class TentacleHookObject : MonoBehaviour
 {
     [SerializeField] private GameObject Player; // プレイヤー
     [SerializeField] private Rigidbody2D playerRb; // プレイヤーのRigidbody2D

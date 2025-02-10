@@ -12,7 +12,7 @@ public class Player : MonoBehaviour
 
     private Rigidbody2D _rigidbody2d;
     private Weapon _weapon;
-    private bool _isGround; 
+    private bool _isGround;
     void Awake()
     {
         _rigidbody2d = GetComponent<Rigidbody2D>();
@@ -98,7 +98,7 @@ public class Player : MonoBehaviour
     private void CheckGround()
     {
         
-        float rayLength = 0.1f;
+        float rayLength = 0.3f;
         _isGround = Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
 
         Debug.Log($"ChackGround : {_isGround}");

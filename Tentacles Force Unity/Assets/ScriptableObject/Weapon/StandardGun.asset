@@ -19,4 +19,4 @@ MonoBehaviour:
   ShotLogic: {fileID: 11400000, guid: 2a5336f410a2aec49baa84a3dd753640, type: 2}
   FireSE: {fileID: 8300000, guid: a979b924b379f6b488d85fcb7399e4d7, type: 3}
   MuzzleEffect: {fileID: 0}
-  WeaponImage: {fileID: 0}
+  WeaponImage: {fileID: 21300000, guid: d477761ed0995b8419d48b3dda3507a0, type: 3}
