@@ -20,7 +20,7 @@ public class HookObject : MonoBehaviour
         if (collision.CompareTag("Ground")) // 地面に触れたら
         {
             Debug.Log("HookHit");
-            hookJump.OnHookHit(transform.position);
+            // hookJump.OnHookHit(transform.position);
             Destroy(gameObject); // フックを削除
         }
     }
