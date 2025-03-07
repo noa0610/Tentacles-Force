@@ -2,22 +2,32 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Android;
 
 public class HookJump : MonoBehaviour
 {
     // 基本アクション用フィールド
-    [SerializeField] private float MoveSpeed = 7;    // 移動速度
-    [SerializeField] private float JumpForce = 7;    // ジャンプ力
-    [SerializeField] private GameObject GroundCheck; // 地面チェック用オブジェクト
-    [SerializeField] private LayerMask GroundLayer;  // 地面判定用レイヤー
-    private bool _isGround;                          // 地面にいるかどうか
+    [SerializeField] private float MoveForce = 7f;        // 移動力
+    [SerializeField] private float MoveSpeedMax = 5f;     // 最大移動速度
+    [SerializeField] private float JumpForce = 7f;        // ジャンプ力
+    [SerializeField] private float BrakeMoveSpeed = 3.5f; // ブレーキを掛ける速度
+    [SerializeField] private float BrakeTime = 0.3f;      // ブレーキに掛かる時間
+    [SerializeField] private GameObject GroundCheck;  // 地面チェック用オブジェクト
+    [SerializeField] private LayerMask GroundLayer;   // 地面判定用レイヤー
+    private bool _isGround;                           // 地面にいるかどうか
+    private bool _isPerformingAction = false;         // 他のアクション中かどうか
     private Rigidbody2D _rigidbody2d;
+    private Coroutine _brakeCoroutine;
 
 
-    // 円周上でオブジェクトを移動させる用フィールド
-    [SerializeField] private GameObject ObjectB;  // 円周上に配置するオブジェクト
+    // 円周上で移動先標示を移動させる用フィールド
+    [SerializeField] private GameObject ObjectB;  // 円周上に配置する移動先標示
     [SerializeField] private float radius = 2.0f; // 円の半径
     [SerializeField] private int segments = 100;  // 円をギズモ表示する線の分割数
+    [SerializeField] private float sizeMagnificationMax = 2f;   // 移動先標示最大拡大倍率
+    [SerializeField] private float sizeMagnificationMin = 0.1f; // 移動先標示最小拡大倍率
+
+    private Vector3 arrowOriginalSize;                          // 移動先標示の元のサイズ
 
 
     // マウスの方向にオブジェクトを伸縮させる用フィールド
@@ -29,15 +39,14 @@ public class HookJump : MonoBehaviour
     public GameObject hookPrefab;               // 事前にアタッチされた StretchableLine_2
     public Transform firePoint;
     public float HookLengthMax = 10f;           // フックを伸ばせる長さの上限
+    public float HookLengthExpansion = 7.5f;    // フックが命中してから長さ上限に加算される長さ
     public float retractSpeed = 15f;            // フックを伸ばす速度
     public float rewindSpeed = 20f;             // フックを巻き戻す速度
 
 
     private GameObject currentHook;             // 処理に利用するフックのオブジェクト
-    private bool isRetracting = false;
     private Vector3 hookTargetPosition;         // フックが命中した位置
     private float initialDistance;              // 現在のプレイヤーとフックの距離
-    private float currentHookLength;            // 現在のフックの長さ
 
     public float jumpSpeedmultiplier = 1.5f;    // フックジャンプ時の速度
     private bool isHookFired = false;           // フックが発射されているか判定
@@ -50,6 +59,11 @@ public class HookJump : MonoBehaviour
     public bool IsHookFired // フックが発射されているか判定
     {
         get { return isHookFired; }  // 参照可
+    }
+
+    public bool IsStartHookFired // フックの最初の移動が続いているか判定
+    {
+        get { return isStartHookFired; }  // 参照可
     }
 
     public bool IsHookRewind // フックが巻き戻っているか判定
@@ -113,7 +127,11 @@ public class HookJump : MonoBehaviour
 
     void Start()
     {
+        // 移動先標示のオブジェクトのサイズを保存
+        arrowOriginalSize = ObjectB.transform.localScale;
 
+        // 移動先標示を非アクティブ
+        ObjectB.SetActive(false);
     }
 
     void Update()
@@ -121,8 +139,8 @@ public class HookJump : MonoBehaviour
         // 基本移動＆ジャンプ
         PlayerMoveInput();
 
-        // プレハブ生成位置をマウスの方向に移動
-        RoundMoveObject();
+        // レイを飛ばして判定を取る
+        RopePhy();
 
         // フックが命中していなければフック移動
         if (isHookHit == false)
@@ -153,13 +171,19 @@ public class HookJump : MonoBehaviour
                 // 最初のフック移動が終了したら、フックが命中していなければ
                 if (isStartHookFired == false && isHookHit == false)
                 {
-                    // フックの位置とマウスの位置を常に一致させる動きに切り替える
-                    currentHook.transform.position = currentMousePos;
-
-                    // フックまでの距離が限界距離に達したとき限界距離の位置までに補正
-                    if (GetPlayerHookDistance() <= HookLengthMax)
+                    // プレイヤーとマウスの距離がフックの最大の長さを超えていれば
+                    if (GetPleyerMouseDistance() >= HookLengthMax)
                     {
-                        
+                        // 最初のフック移動が終了したときの長さまでフックの位置を補正
+                        currentHook.transform.position = GetPointOnLine(this.transform.position,
+                                                                            currentMousePos,
+                                                                            initialDistance);
+                    }
+                    // プレイヤーとマウスの距離がフックの最大の長さより短くなっていれば
+                    else if (GetPleyerMouseDistance() < HookLengthMax)
+                    {
+                        // マウスの位置までフックを移動させる処理を再開
+                        FireHook();
                     }
                 }
             }
@@ -188,8 +212,27 @@ public class HookJump : MonoBehaviour
                 isStartHookFired = false;
             }
 
+            // 命中地点までの距離が長さの上限に達していれば
+            if (GetPlayerTargetDistance() >= HookLengthMax + HookLengthExpansion)
+            {
+                // 取得した位置をリセット
+                hookTargetPosition = new Vector3(0, 0, 0);
+
+                // フックをプレイヤーの位置まで戻す
+                HookRewind();
+
+                // 移動先標示を非アクティブ
+                ObjectB.SetActive(false);
+
+                // フックの命中状態を解除する
+                isHookHit = false;
+            }
+
             // フックの位置を命中した地点で固定
             currentHook.transform.position = hookTargetPosition;
+
+            // 移動先を矢印で表示
+            RoundMoveObject();
 
             if (Input.GetMouseButtonUp(0))
             {
@@ -202,7 +245,8 @@ public class HookJump : MonoBehaviour
                 // フックをプレイヤーの位置まで戻す
                 HookRewind();
 
-                Debug.Log("ButtonUp(0)");
+                // 移動先標示を非アクティブ
+                ObjectB.SetActive(false);
 
                 // フックの命中状態を解除する
                 isHookHit = false;
@@ -215,7 +259,8 @@ public class HookJump : MonoBehaviour
                 // フックをプレイヤーの位置まで戻す
                 HookRewind();
 
-                Debug.Log("ButtonDown(1)");
+                // 移動先標示を非アクティブ
+                ObjectB.SetActive(false);
 
                 // フックの命中状態を解除する
                 isHookHit = false;
@@ -226,17 +271,27 @@ public class HookJump : MonoBehaviour
     /// <summary>
     /// オブジェクトを円周上で移動
     /// </summary>
+
+    // フックジャンプの移動先を円周上の矢印の方向、移動量を矢印の大きさで表現する
     private void RoundMoveObject()
     {
-        // マウス座標取得（ワールド座標に変換）
-        Vector3 mousePos = _camera.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0; // 2D環境の場合、z軸を0に固定
+        // フックが命中していなければ処理は行わない
+        if (isHookHit == false) return;
+
+        // 移動先標示をアクティブ化
+        ObjectB.SetActive(true);
 
         // 中心オブジェクトAの座標（このスクリプトがアタッチされているオブジェクト）
         Vector3 centerPos = transform.position;
 
-        // A → マウス座標の方向ベクトル
-        Vector2 direction = mousePos - centerPos;
+        // プレイヤーと命中地点の距離を計算
+        float distance = GetPlayerTargetDistance();
+
+        // ジャンプで移動する方向ベクトル
+        Vector2 direction = JumpVectorForce(
+                            GetTwoPointNormalized(this.transform.position, hookTargetPosition),
+                            distance,
+                            jumpSpeedmultiplier);
 
         // 角度を取得
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -248,11 +303,37 @@ public class HookJump : MonoBehaviour
             0
         );
 
-        // オブジェクトBを移動
+        // 移動先標示のサイズを距離に応じて変更
+        ArrowObjectSizeChange(distance);
+
+        // 移動先標示を移動
         ObjectB.transform.position = newPos;
 
-        // オブジェクトBの向きをマウスがある方向に向ける
+        // 移動先標示の向きを計算した角度の方向に向ける
         ObjectB.transform.rotation = Quaternion.Euler(ObjectB.transform.rotation.x, ObjectB.transform.rotation.y, angle - 90);
+    }
+
+    // 移動先標示のサイズを距離に応じて変更
+    private void ArrowObjectSizeChange(float distance)
+    {
+        // 距離を拡大倍率に変換
+        float sizeMagnification = distance / 5f;
+
+        // 拡大倍率が最大値以上なら最大値に変更
+        if (sizeMagnification >= sizeMagnificationMax)
+        {
+            sizeMagnification = sizeMagnificationMax;
+        }
+        // 拡大倍率が最小値以下なら最小値に変更
+        else if (sizeMagnification <= sizeMagnificationMin)
+        {
+            sizeMagnification = sizeMagnificationMin;
+        }
+
+        // 移動先標示のサイズを距離に応じたサイズに変更
+        ObjectB.transform.localScale = new Vector3(arrowOriginalSize.x * sizeMagnification,
+                                                   arrowOriginalSize.y * sizeMagnification,
+                                                   arrowOriginalSize.z);
     }
 
     /// <summary>
@@ -280,6 +361,28 @@ public class HookJump : MonoBehaviour
             Gizmos.DrawLine(prevPoint, newPoint);
             prevPoint = newPoint;
         }
+    }
+
+    /// <summary>
+    /// ロープの地面判定取得
+    /// </summary>
+    private void RopePhy()
+    {
+        // フックまでの距離を取得
+        float rayLength = GetPlayerHookDistance();
+
+        // フックが命中したかどうか判定
+        bool isRopeHit = Physics2D.Raycast(this.transform.position,
+                                           GetTwoPointNormalized(this.transform.position, currentHook.transform.position),
+                                           rayLength,
+                                           GroundLayer);
+
+        Debug.Log($"isRopeHit : {isRopeHit}");
+
+        // レイを表示（緑で表示、判定取得で赤で表示）
+        Debug.DrawRay(this.transform.position,
+                      GetTwoPointNormalized(this.transform.position, currentHook.transform.position) * rayLength,
+                      isRopeHit ? Color.green : Color.red);
     }
 
     /// <summary>
@@ -324,8 +427,8 @@ public class HookJump : MonoBehaviour
     /// <returns></returns>
     private IEnumerator FireHookIEnumerator()
     {
-        // フックがアクティブでなければ処理を強制終了
-        if (ActiveChackHook() == false) yield break;
+        // フックがアクティブではなく、最初のフック移動が既に始まっていれば、処理を強制終了
+        if (ActiveChackHook() == false && isStartHookFired) yield break;
 
         Debug.Log("FireHookMove ON");
 
@@ -340,7 +443,7 @@ public class HookJump : MonoBehaviour
         currentHook.transform.position = InitializationPos;
 
         // フックとマウスの距離が近づくまで、プレイヤーとフックの距離が限界距離になるまでループ
-        while (GetMouseHookDistance() >= 0.1f && GetPlayerHookDistance() <= HookLengthMax)
+        while (GetPlayerHookDistance() <= HookLengthMax)
         {
             // 最初のフック移動判定が切り替わることがあれば処理を強制終了
             if (isStartHookFired == false) yield break;
@@ -395,7 +498,12 @@ public class HookJump : MonoBehaviour
         while (GetPlayerHookDistance() >= 0.1f)
         {
             // フック移動が再開されたら処理を強制終了
-            if (isStartHookFired == true) yield break;
+            if (isStartHookFired == true)
+            {
+                // フックの巻き戻し処理終了判定
+                isHookRewind = false;
+                yield break;
+            }
 
             // 現在のプレイヤーとマウスの直線上で、initialDistanceだけ戻った位置にフックの位置を補正
             currentHook.transform.position = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
@@ -468,7 +576,7 @@ public class HookJump : MonoBehaviour
         return Vector3.Distance(mousePointPos, hookPointPos);  // マウスとフックの距離を計算
     }
 
-    /// <summary>
+    /// <summary
     /// firstPos から secondPos まで向かうベクトル方向を求める
     /// </summary>
     /// <param name="firstPos"></param>
@@ -499,6 +607,9 @@ public class HookJump : MonoBehaviour
     /// <param name="direciton"></param>
     private void HookPowerJump(Vector2 direciton)
     {
+        // 移動を伴うアクションのフラグを開始
+        MoveActionFlag(0.1f);
+
         // 現在のプレイヤーと命中地点の距離を取得
         float Distance = GetPlayerTargetDistance();
 
@@ -507,6 +618,19 @@ public class HookJump : MonoBehaviour
 
         // 指定した方向に瞬間的に力を加えてジャンプ
         _rigidbody2d.AddForce(direciton * (Distance * jumpSpeedmultiplier), ForceMode2D.Impulse);
+    }
+
+    /// <summary>
+    /// ベクトル方向と距離と力を指定してジャンプするベクトル方向と大きさを求める
+    /// </summary>
+    /// <param name="direciton"></param>
+    /// <param name="distance"></param>
+    /// <param name="jumpForce"></param>
+    /// <returns></returns>
+    private Vector2 JumpVectorForce(Vector2 direciton, float distance, float jumpForce)
+    {
+        Vector2 jumpVectorForce = direciton * (distance * jumpForce);
+        return jumpVectorForce;
     }
 
 
@@ -518,21 +642,43 @@ public class HookJump : MonoBehaviour
         // 地面判定取得
         CheckGround();
 
+        Vector3 moveDirection = Vector3.zero;
+
+
         // 左右移動
         if (Input.GetKey(KeyCode.A))
         {
-            SideMove(Vector2.left);
+            moveDirection = Vector3.left;
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            SideMove(Vector2.right);
+            moveDirection = Vector3.right;
         }
+        else if (_isGround && !_isPerformingAction && Mathf.Abs(_rigidbody2d.velocity.x) <= MoveSpeedMax + 1)
+        {
+            Debug.Log("stop");
+            if (_brakeCoroutine != null)
+            {
+                StopCoroutine(_brakeCoroutine);
+            }
+            _brakeCoroutine = StartCoroutine(ApplyBrake());
+        }
+
+        // ブレーキ処理
+        if (moveDirection != Vector3.zero)
+        {
+            MoveBrake(moveDirection);
+        }
+
+        // 通常移動処理
+        SideMove(moveDirection);
 
         // ジャンプ
         if (Input.GetKeyDown(KeyCode.Space))
         {
             GroundJump();
         }
+
     }
 
     /// <summary>
@@ -541,9 +687,101 @@ public class HookJump : MonoBehaviour
     /// <param name="direction"></param>
     public void SideMove(Vector3 direction)
     {
-        _rigidbody2d.velocity = new Vector2(direction.x * MoveSpeed, _rigidbody2d.velocity.y);
+        Vector2 velocity = _rigidbody2d.velocity;
+
+        // 現在の速度が最大値を超えていなければ
+        if (Mathf.Abs(velocity.x) < MoveSpeedMax)
+        {
+            // 継続的に力を加えて移動
+            _rigidbody2d.AddForce(new Vector2(direction.x * MoveForce, 0), ForceMode2D.Force);
+        }
+
         Direction(direction);
     }
+
+    /// <summary>
+    /// 移動を伴うアクションの判定を開始した処理
+    /// </summary>
+    /// <param name="delay"></param>
+    private void MoveActionFlag(float delay)
+    {
+        StartCoroutine(ResetActionFlag(delay));
+    }
+
+    /// <summary>
+    /// 移動以外のアクション時間の判定
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator ResetActionFlag(float delay)
+    {
+        _isPerformingAction = true;
+        yield return new WaitForSeconds(delay); // アクションの継続時間に応じて調整
+        _isPerformingAction = false;
+    }
+
+    /// <summary>
+    /// 移動が速い状態で方向転換をするとき徐々に速度を下げる
+    /// </summary>
+    /// <param name="direction"></param>
+    public void MoveBrake(Vector3 direction)
+    {
+        Vector2 velocity = _rigidbody2d.velocity;
+
+        // 逆方向への入力があり、かつ現在の速度が一定以上ならブレーキ処理開始
+        if (Mathf.Sign(velocity.x) != Mathf.Sign(direction.x) && Mathf.Abs(velocity.x) > 0.1f)
+        {
+            if (_brakeCoroutine != null)
+            {
+                StopCoroutine(_brakeCoroutine);
+            }
+            _brakeCoroutine = StartCoroutine(ApplyBrake());
+        }
+    }
+
+    /// <summary>
+    /// 速度を徐々に 0 にする方向転換ブレーキ処理
+    /// </summary>
+    private IEnumerator ApplyBrake()
+    {
+        // 計測時間を保存
+        float elapsedTime = 0f;
+
+        // ブレーキをかける前の速度を保存
+        Vector2 initialVelocity = _rigidbody2d.velocity;
+
+        // ブレーキをかける前の速度の絶対値を保存
+        float initialSpeed = Mathf.Abs(initialVelocity.x);
+
+        // ブレーキに掛かる時間が過ぎるまで
+        while (elapsedTime < BrakeTime)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / BrakeTime;
+
+            Debug.Log("ブレーキ中");
+
+            // ブレーキ力を徐々に強くする（最初は弱く、時間経過で強く）
+            float brakeFactor = Mathf.Pow(progress, 2); // 二次関数的にブレーキを強く
+            float newSpeed = Mathf.Lerp(initialSpeed, 0, brakeFactor);
+
+            // 徐々に速度を 0 にする（イージング調整可能）
+            _rigidbody2d.velocity = new Vector2(Mathf.Sign(initialVelocity.x) * newSpeed, _rigidbody2d.velocity.y);
+
+            // ある程度まで速度が落ちたら完全停止
+            if (Mathf.Abs(_rigidbody2d.velocity.x) < 0.05f)
+            {
+                _rigidbody2d.velocity = new Vector2(0, _rigidbody2d.velocity.y);
+                break;
+            }
+
+            yield return null;
+        }
+
+        // 完全に停止
+        _rigidbody2d.velocity = new Vector2(0, _rigidbody2d.velocity.y);
+        _brakeCoroutine = null;
+    }
+
 
     /// <summary>
     /// 向き変更
@@ -567,14 +805,14 @@ public class HookJump : MonoBehaviour
         if (_isGround)
         {
             Debug.Log("Jump");
-            _rigidbody2d.velocity = new Vector2(_rigidbody2d.velocity.x, JumpForce);
+
+            // 既存の上下速度をリセット
+            _rigidbody2d.velocity = new Vector2(_rigidbody2d.velocity.x, 0);
+
+            // 瞬間的に力を加えてジャンプ
+            _rigidbody2d.AddForce(Vector2.up * JumpForce, ForceMode2D.Impulse);
         }
     }
-
-    // private void HookForceJump()
-    // {
-    //     _rigidbody2d.velocity = new Vector2(_rigidbody2d.velocity.x, JumpForce);
-    // }
 
     /// <summary>
     /// 地面判定取得
