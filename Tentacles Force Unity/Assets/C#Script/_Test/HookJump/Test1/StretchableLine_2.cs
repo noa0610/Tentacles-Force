@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
+/// <summary>
+/// 衝突判定をプレイヤーに渡すフックのクラス
+/// </summary>
 public class StretchableLine_2 : MonoBehaviour
 {
     [SerializeField] private GameObject Player;
@@ -10,13 +13,24 @@ public class StretchableLine_2 : MonoBehaviour
     private Transform startPoint;                       // フックの基点（プレイヤー）
     [SerializeField] private LineRenderer lineRenderer; // フックのロープの描画
     [SerializeField] private LayerMask hitMask;         // 命中判定用レイヤー
+    private Rigidbody2D rb;                            // フックのRigidbody2D
 
     // 内部処理する変数
     private bool isHooked = false;     // フックが地形に命中したか
     private Vector3 hookHitPoint;      // フックが命中した位置
+    private bool isMoving = false;     // フックが移動中かどうか
+    private Vector3 targetPosition;     // 目標位置
 
     private void Awake()
     {
+        // Rigidbody2Dの設定
+        rb = gameObject.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.drag = 1f;  // 空気抵抗
+        rb.angularDrag = 1f;  // 回転抵抗
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;  // 連続衝突検出
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;  // 補間
+
         // 呼び出されるまでオブジェクトを非アクティブ化
         gameObject.SetActive(false);
     }
@@ -46,16 +60,60 @@ public class StretchableLine_2 : MonoBehaviour
 
         // ロープの当たり判定をRayで作る
         GetRayPoint();
+
+        // フックの移動処理
+        if (isMoving)
+        {
+            MoveHook();
+        }
+    }
+
+    /// <summary>
+    /// フックを目標位置に向かって移動させる
+    /// </summary>
+    public void MoveTo(Vector3 target)
+    {
+        targetPosition = target;
+        isMoving = true;
+    }
+
+    /// <summary>
+    /// フックの移動を停止
+    /// </summary>
+    public void StopMoving()
+    {
+        isMoving = false;
+        rb.velocity = Vector2.zero;
+    }
+
+    /// <summary>
+    /// フックの移動処理
+    /// </summary>
+    private void MoveHook()
+    {
+        Vector2 direction = (targetPosition - transform.position).normalized;
+        float distance = Vector2.Distance(transform.position, targetPosition);
+
+        // 目標位置に近づいたら停止
+        if (distance < 0.1f)
+        {
+            StopMoving();
+            return;
+        }
+
+        // 目標位置に向かって力を加える
+        float force = distance * 10f;  // 距離に応じた力の調整
+        rb.AddForce(direction * force, ForceMode2D.Force);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log($"_hookJump.IsHookRewind : {_hookJump.IsHookRewind}");
-        Debug.Log($"_hookJump.IsHookFired : {_hookJump.IsHookFired}");
-
         // 地面や壁に命中したとき、フックが巻き戻っていないとき、フックが発射されているとき、
         if (other.gameObject.CompareTag("Ground") && _hookJump.IsHookRewind == false && _hookJump.IsHookFired)
         {
+            // フックの移動を停止
+            StopMoving();
+
             // フックが命中した地点を記録
             hookHitPoint = other.ClosestPoint(this.transform.position);
 
@@ -70,7 +128,6 @@ public class StretchableLine_2 : MonoBehaviour
 
             Debug.Log($"HookHit: {hookHitPoint}");
         }
-
     }
 
     /// <summary>
@@ -82,8 +139,11 @@ public class StretchableLine_2 : MonoBehaviour
         RaycastHit2D hit = Physics2D.Linecast(Player.transform.position, this.transform.position, hitMask);
 
         // 命中した場合
-        if (hit.collider != null &&  _hookJump.IsHookRewind == false && _hookJump.IsHookFired)
+        if (hit.collider != null && _hookJump.IsHookRewind == false && _hookJump.IsHookFired)
         {
+            // フックの移動を停止
+            StopMoving();
+
             // 命中地点を小さな十字で可視化
             float crossSize = 0.2f;  // 十字のサイズ
             Vector2 hitPoint = hit.point;
@@ -111,7 +171,6 @@ public class StretchableLine_2 : MonoBehaviour
         {
             Debug.DrawLine(this.transform.position, Player.transform.position, Color.blue, 1f);  // ヒットしない場合は青色
         }
-
     }
 
     /// <summary>

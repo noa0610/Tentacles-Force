@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// TODO カメラ移動がtransform.positionの加算で移動しているためプレイヤーの移動がぶれて見える
 public class CameraMove : MonoBehaviour
 {
     // --- Inspector Variables ---　インスペクターから設定する変数

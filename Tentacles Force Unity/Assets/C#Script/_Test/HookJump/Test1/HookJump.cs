@@ -10,8 +10,7 @@ public class HookJump : MonoBehaviour
     [SerializeField] private float MoveForce = 7f;        // 移動力
     [SerializeField] private float MoveSpeedMax = 5f;     // 最大移動速度
     [SerializeField] private float JumpForce = 7f;        // ジャンプ力
-    [SerializeField] private float BrakeMoveSpeed = 3.5f; // ブレーキを掛ける速度
-    [SerializeField] private float BrakeTime = 0.3f;      // ブレーキに掛かる時間
+    [SerializeField] private float BrakeStrength = 3.5f;  // ブレーキの力
     [SerializeField] private GameObject GroundCheck;  // 地面チェック用オブジェクト
     [SerializeField] private LayerMask GroundLayer;   // 地面判定用レイヤー
     private bool _isGround;                           // 地面にいるかどうか
@@ -449,10 +448,8 @@ public class HookJump : MonoBehaviour
             if (isStartHookFired == false) yield break;
 
             // 現在のプレイヤーとマウスの直線上で、initialDistanceだけ進んだ位置にフックの位置を補正
-            currentHook.transform.position = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
-
-            // フックの位置をマウスの位置に近づける
-            currentHook.transform.position = Vector3.MoveTowards(currentHook.transform.position, currentMousePos, retractSpeed * Time.deltaTime);
+            Vector3 targetPos = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
+            currentHook.GetComponent<StretchableLine_2>().MoveTo(targetPos);
 
             // 進んだ後のプレイヤーとフックの距離を記録
             initialDistance = GetPlayerHookDistance();
@@ -506,10 +503,8 @@ public class HookJump : MonoBehaviour
             }
 
             // 現在のプレイヤーとマウスの直線上で、initialDistanceだけ戻った位置にフックの位置を補正
-            currentHook.transform.position = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
-
-            // フックの位置をプレイヤーの位置に近づける
-            currentHook.transform.position = Vector3.MoveTowards(currentHook.transform.position, this.transform.position, rewindSpeed * Time.deltaTime);
+            Vector3 targetPos = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
+            currentHook.GetComponent<StretchableLine_2>().MoveTo(targetPos);
 
             // 戻った後のプレイヤーとフックの距離を記録
             initialDistance = GetPlayerHookDistance();
@@ -610,6 +605,12 @@ public class HookJump : MonoBehaviour
         // 移動を伴うアクションのフラグを開始
         MoveActionFlag(0.1f);
 
+        // ブレーキ中であれば
+        if (_brakeCoroutine != null)
+        {
+            // ブレーキ処理を止める
+            StopCoroutine(_brakeCoroutine);
+        }
         // 現在のプレイヤーと命中地点の距離を取得
         float Distance = GetPlayerTargetDistance();
 
@@ -646,22 +647,30 @@ public class HookJump : MonoBehaviour
 
 
         // 左右移動
+        // A入力がある状態で
         if (Input.GetKey(KeyCode.A))
         {
+            // 移動方向を左に指定
             moveDirection = Vector3.left;
         }
+        // D入力がある状態で
         else if (Input.GetKey(KeyCode.D))
         {
+            // 移動方向を右に指定
             moveDirection = Vector3.right;
         }
-        else if (_isGround && !_isPerformingAction && Mathf.Abs(_rigidbody2d.velocity.x) <= MoveSpeedMax + 1)
+        // 地面に立っていて、入力が無いとき
+        else if (_isGround && !_isPerformingAction)
         {
-            Debug.Log("stop");
-            if (_brakeCoroutine != null)
+            // 速度が一定以上の場合
+            if(Mathf.Abs(_rigidbody2d.velocity.x) >= MoveSpeedMax)
             {
-                StopCoroutine(_brakeCoroutine);
+                InertiaMoveStop();
             }
-            _brakeCoroutine = StartCoroutine(ApplyBrake());
+            else
+            {
+                MoveStop();
+            }
         }
 
         // ブレーキ処理
@@ -700,6 +709,22 @@ public class HookJump : MonoBehaviour
     }
 
     /// <summary>
+    /// 移動を停止する
+    /// </summary>
+    public void MoveStop()
+    {
+        _rigidbody2d.velocity = new Vector2(0, _rigidbody2d.velocity.y);
+    }
+
+    /// <summary>
+    /// 慣性を維持しつつ移動を停止する
+    /// </summary>
+    public void InertiaMoveStop()
+    {
+        Vector2 velocity = _rigidbody2d.velocity;
+    }
+
+    /// <summary>
     /// 移動を伴うアクションの判定を開始した処理
     /// </summary>
     /// <param name="delay"></param>
@@ -730,10 +755,13 @@ public class HookJump : MonoBehaviour
         // 逆方向への入力があり、かつ現在の速度が一定以上ならブレーキ処理開始
         if (Mathf.Sign(velocity.x) != Mathf.Sign(direction.x) && Mathf.Abs(velocity.x) > 0.1f)
         {
+            // ブレーキ中であれば
             if (_brakeCoroutine != null)
             {
+                // ブレーキ処理を止める
                 StopCoroutine(_brakeCoroutine);
             }
+            // ブレーキ処理を開始する
             _brakeCoroutine = StartCoroutine(ApplyBrake());
         }
     }
@@ -743,36 +771,40 @@ public class HookJump : MonoBehaviour
     /// </summary>
     private IEnumerator ApplyBrake()
     {
-        // 計測時間を保存
-        float elapsedTime = 0f;
-
-        // ブレーキをかける前の速度を保存
-        Vector2 initialVelocity = _rigidbody2d.velocity;
-
-        // ブレーキをかける前の速度の絶対値を保存
-        float initialSpeed = Mathf.Abs(initialVelocity.x);
+        // ブレーキをかける前の方向を保存
+        float initialDirection = Mathf.Sign(_rigidbody2d.velocity.x);
 
         // ブレーキに掛かる時間が過ぎるまで
-        while (elapsedTime < BrakeTime)
+        while (Mathf.Abs(_rigidbody2d.velocity.x) > 0.1f) // 速度がほぼ0になるまで
         {
-            elapsedTime += Time.deltaTime;
-            float progress = elapsedTime / BrakeTime;
+            Debug.Log("brake");
+            // 現在の速度を取得
+            Vector2 velocity = _rigidbody2d.velocity;
 
-            Debug.Log("ブレーキ中");
+            // 現在の速度の方向を取得
+            float currentDirection = Mathf.Sign(velocity.x);
 
-            // ブレーキ力を徐々に強くする（最初は弱く、時間経過で強く）
-            float brakeFactor = Mathf.Pow(progress, 2); // 二次関数的にブレーキを強く
-            float newSpeed = Mathf.Lerp(initialSpeed, 0, brakeFactor);
-
-            // 徐々に速度を 0 にする（イージング調整可能）
-            _rigidbody2d.velocity = new Vector2(Mathf.Sign(initialVelocity.x) * newSpeed, _rigidbody2d.velocity.y);
-
-            // ある程度まで速度が落ちたら完全停止
-            if (Mathf.Abs(_rigidbody2d.velocity.x) < 0.05f)
+            // 方向が反転したらブレーキ終了
+            if (currentDirection != initialDirection)
             {
-                _rigidbody2d.velocity = new Vector2(0, _rigidbody2d.velocity.y);
                 break;
             }
+
+            // **新しい入力方向を確認**
+            float input = 0;
+            if (Input.GetKey(KeyCode.A)) input = -1;
+            if (Input.GetKey(KeyCode.D)) input = 1;
+
+            // **新しい入力があればブレーキ終了**
+            if (input != 0 && Mathf.Sign(input) != Mathf.Sign(initialDirection))
+            {
+                Debug.Log("新しい入力を検知、ブレーキ解除");
+                break;
+            }
+
+            // 速度の向きとは逆方向にブレーキ力を加える
+            float brakeForce = Mathf.Abs(velocity.x) * BrakeStrength; // 速度に比例した減速力
+            _rigidbody2d.AddForce(new Vector2(-currentDirection * brakeForce, 0), ForceMode2D.Force);
 
             yield return null;
         }
@@ -821,12 +853,6 @@ public class HookJump : MonoBehaviour
     {
         float rayLength = 0.5f;
         _isGround = Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
-
-        // if(isJumping)
-        // {
-        //     isJumping = !Physics2D.Raycast(GroundCheck.transform.position, Vector2.down, rayLength, GroundLayer);
-        // }
-
 
         Debug.Log($"ChackGround : {_isGround}");
         // レイを表示（緑で表示、判定取得で赤で表示）

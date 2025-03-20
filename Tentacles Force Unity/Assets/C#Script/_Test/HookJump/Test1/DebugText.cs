@@ -9,6 +9,11 @@ public class DebugText : MonoBehaviour
     public TextMeshProUGUI _textMeshProUGUI;
     private HookJump _hookJump;
 
+    
+    public TextMeshProUGUI _InputTextMeshProUGUI;
+    private bool isPushA;
+    private bool isPushD;
+
     void Start()
     {
         if(_textMeshProUGUI == null)
@@ -28,6 +33,19 @@ public class DebugText : MonoBehaviour
 
     void Update()
     {
+        isPushA = false;
+        isPushD = false;
+
+        if(Input.GetKey(KeyCode.A))
+        {
+            isPushA = true;
+        }
+        else if(Input.GetKey(KeyCode.D))
+        {
+            isPushD = true;
+        }
+
         _textMeshProUGUI.text = $"isHookFired = {_hookJump.IsHookFired} \n isStartHookFired = {_hookJump.IsStartHookFired} \n isHookRewind = {_hookJump.IsHookRewind} \n isHookHit = {_hookJump.IsHookHit}";
+        _InputTextMeshProUGUI.text = $"Left = {isPushA} \nRight = {isPushD}";
     }
 }
