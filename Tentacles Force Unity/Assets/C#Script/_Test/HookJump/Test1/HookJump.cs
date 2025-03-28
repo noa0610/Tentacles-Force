@@ -448,8 +448,10 @@ public class HookJump : MonoBehaviour
             if (isStartHookFired == false) yield break;
 
             // 現在のプレイヤーとマウスの直線上で、initialDistanceだけ進んだ位置にフックの位置を補正
-            Vector3 targetPos = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
-            currentHook.GetComponent<StretchableLine_2>().MoveTo(targetPos);
+            currentHook.transform.position = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
+
+            // フックの位置をマウスの位置に近づける
+            currentHook.transform.position = Vector3.MoveTowards(currentHook.transform.position, currentMousePos, retractSpeed * Time.deltaTime);
 
             // 進んだ後のプレイヤーとフックの距離を記録
             initialDistance = GetPlayerHookDistance();
@@ -503,8 +505,10 @@ public class HookJump : MonoBehaviour
             }
 
             // 現在のプレイヤーとマウスの直線上で、initialDistanceだけ戻った位置にフックの位置を補正
-            Vector3 targetPos = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
-            currentHook.GetComponent<StretchableLine_2>().MoveTo(targetPos);
+            currentHook.transform.position = GetPointOnLine(this.transform.position, currentMousePos, initialDistance);
+
+            // フックの位置をプレイヤーの位置に近づける
+            currentHook.transform.position = Vector3.MoveTowards(currentHook.transform.position, this.transform.position, rewindSpeed * Time.deltaTime);
 
             // 戻った後のプレイヤーとフックの距離を記録
             initialDistance = GetPlayerHookDistance();
