@@ -6,6 +6,8 @@ using UnityEngine.Android;
 
 public class HookJump : MonoBehaviour
 {
+    // TODO Enemyに命中したときの処理を作る
+
     // 基本アクション用フィールド
     [SerializeField] private float MoveForce = 7f;        // 移動力
     [SerializeField] private float MoveSpeedMax = 5f;     // 最大移動速度
@@ -13,6 +15,7 @@ public class HookJump : MonoBehaviour
     [SerializeField] private float BrakeStrength = 3.5f;  // ブレーキの力
     [SerializeField] private GameObject GroundCheck;  // 地面チェック用オブジェクト
     [SerializeField] private LayerMask GroundLayer;   // 地面判定用レイヤー
+    [SerializeField] private LayerMask EnemyLayer;    // 敵判定用レイヤー
     private bool _isGround;                           // 地面にいるかどうか
     private bool _isPerformingAction = false;         // 他のアクション中かどうか
     private Rigidbody2D _rigidbody2d;
@@ -94,9 +97,9 @@ public class HookJump : MonoBehaviour
     [SerializeField] private float moveSpeed = 30f; // プレイヤーの移動速度
 
 
-    // 壁張り付き用フィールド
-    [SerializeField] private GameObject WallCheck; // 前方の壁チェック用オブジェクト
-    private bool _isWallMounted; // 壁取得判定
+    // // 壁張り付き用フィールド
+    // [SerializeField] private GameObject WallCheck; // 前方の壁チェック用オブジェクト
+    // private bool _isWallMounted; // 壁取得判定
 
     // private GameObject currentStretchableObject;
     // private GameObject currentHook;
@@ -137,9 +140,6 @@ public class HookJump : MonoBehaviour
     {
         // 基本移動＆ジャンプ
         PlayerMoveInput();
-
-        // レイを飛ばして判定を取る
-        RopePhy();
 
         // フックが命中していなければフック移動
         if (isHookHit == false)
@@ -360,28 +360,6 @@ public class HookJump : MonoBehaviour
             Gizmos.DrawLine(prevPoint, newPoint);
             prevPoint = newPoint;
         }
-    }
-
-    /// <summary>
-    /// ロープの地面判定取得
-    /// </summary>
-    private void RopePhy()
-    {
-        // フックまでの距離を取得
-        float rayLength = GetPlayerHookDistance();
-
-        // フックが命中したかどうか判定
-        bool isRopeHit = Physics2D.Raycast(this.transform.position,
-                                           GetTwoPointNormalized(this.transform.position, currentHook.transform.position),
-                                           rayLength,
-                                           GroundLayer);
-
-        Debug.Log($"isRopeHit : {isRopeHit}");
-
-        // レイを表示（緑で表示、判定取得で赤で表示）
-        Debug.DrawRay(this.transform.position,
-                      GetTwoPointNormalized(this.transform.position, currentHook.transform.position) * rayLength,
-                      isRopeHit ? Color.green : Color.red);
     }
 
     /// <summary>
@@ -851,7 +829,7 @@ public class HookJump : MonoBehaviour
     }
 
     /// <summary>
-    /// 地面判定取得
+    /// 着地判定取得
     /// </summary>
     private void CheckGround()
     {

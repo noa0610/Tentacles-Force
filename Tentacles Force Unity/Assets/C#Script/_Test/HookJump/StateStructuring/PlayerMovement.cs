@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class PlayerMovement : MonoBehaviour
 {
-    // TODO 空中での動作の処理を作る（もしくは既存の処理を地上、空中で処理が切り替わるように変更する）
+    // TODO 1, 空中での動作の処理を作る（もしくは既存の処理を地上、空中で処理が切り替わるように変更する）
     private readonly float GroundAccel = 10f;     // 地上の加速力
     private readonly float MaxGroundSpeed = 8f;   // 地上の最大移動速度
     private readonly float GroundBrakeForce = 2f; // 地上の移動停止力

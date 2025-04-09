@@ -13,7 +13,7 @@ public class StretchableLine_2 : MonoBehaviour
     [SerializeField] private HookJump _hookJump;
     private Transform startPoint;                       // フックの基点（プレイヤー）
     [SerializeField] private LineRenderer lineRenderer; // フックのロープの描画
-    [SerializeField] private LayerMask hitMask;         // 命中判定用レイヤー
+    [SerializeField] private LayerMask HtiLayer;        // 命中判定用レイヤー（敵と地面のレイヤー選択）
 
     // 内部処理する変数
     private bool isHooked = false;     // フックが地形に命中したか
@@ -112,7 +112,7 @@ public class StretchableLine_2 : MonoBehaviour
         GetRayPoint();
 
         // メッシュを作りロープの軌跡の当たり判定を補間
-        CreateMash();
+        // CreateMash();
 
         // 前フレームを更新
         PositionUpdate();
@@ -149,11 +149,34 @@ public class StretchableLine_2 : MonoBehaviour
     private void GetRayPoint()
     {
         // 自分とプレイヤーの位置の2点で繋いでレイを飛ばす
-        RaycastHit2D hit = Physics2D.Linecast(Player.transform.position, this.transform.position, hitMask);
+        RaycastHit2D hit = Physics2D.Linecast(Player.transform.position, this.transform.position, HtiLayer);
 
         // 命中した場合
         if (hit.collider != null && _hookJump.IsHookRewind == false && _hookJump.IsHookFired)
         {
+            // オブジェクトのレイヤー取得
+            int layer = hit.collider.gameObject.layer;
+
+            if (layer == LayerMask.NameToLayer("Ground"))
+            {
+                // 命中した地点を記録
+                hookHitPoint = hit.point;
+
+                // フックが命中した判定
+                isHooked = true;
+
+                // 命中した地点をプレイヤーに渡す
+                _hookJump.HookTargetPosition = hookHitPoint;
+
+                // 命中した判定をプレイヤーに渡す
+                _hookJump.IsHookHit = isHooked;
+            }
+            else if (layer == LayerMask.NameToLayer("Ground"))
+            {
+                // 命中した判定をプレイヤーに渡す
+                _hookJump.IsHookHit = isHooked;
+            }
+
             // 命中地点を小さな十字で可視化
             float crossSize = 0.2f;  // 十字のサイズ
             Vector2 hitPoint = hit.point;
@@ -164,24 +187,13 @@ public class StretchableLine_2 : MonoBehaviour
             Debug.DrawLine(Player.transform.position, hit.point, Color.red, 1f);  // ヒット地点まで赤色
             Debug.DrawLine(hit.point, this.transform.position, Color.green, 1f);  // ヒット後の部分は緑色
 
-            // 命中した地点を記録
-            hookHitPoint = hit.point;
 
-            // フックが命中した判定
-            isHooked = true;
-
-            // 命中した地点をプレイヤーに渡す
-            _hookJump.HookTargetPosition = hookHitPoint;
-
-            // 命中した判定をプレイヤーに渡す
-            _hookJump.IsHookHit = isHooked;
         }
         // 命中しない場合
         else
         {
             Debug.DrawLine(this.transform.position, Player.transform.position, Color.blue, 1f);  // ヒットしない場合は青色
         }
-
     }
 
     /// <summary>
@@ -199,42 +211,42 @@ public class StretchableLine_2 : MonoBehaviour
     /// <summary>
     /// コライダーを生成し、判定を取得する
     /// </summary>
-    private void CreateMash()
-    {
-        // 前フレーム位置の更新が無ければ処理しない
-        if (lastHookPosition == HookPosition.position)
-            return;
+    // private void CreateMash()
+    // {
+    //     // 前フレーム位置の更新が無ければ処理しない
+    //     if (lastHookPosition == HookPosition.position)
+    //         return;
 
-        // ローカル座標に変換した頂点を設定
-        Vector2[] points = new Vector2[] {
-            transform.InverseTransformPoint(lastHookPosition),    // 前フレームのフック位置
-            transform.InverseTransformPoint(PlayerPosition.position), // プレイヤー位置
-            transform.InverseTransformPoint(HookPosition.position)    // 現在のフック位置
-        };
+    //     // ローカル座標に変換した頂点を設定
+    //     Vector2[] points = new Vector2[] {
+    //         transform.InverseTransformPoint(lastHookPosition),    // 前フレームのフック位置
+    //         transform.InverseTransformPoint(PlayerPosition.position), // プレイヤー位置
+    //         transform.InverseTransformPoint(HookPosition.position)    // 現在のフック位置
+    //     };
 
-        // 頂点が重複していないかチェック
-        if (points[0] == points[1] || points[1] == points[2] || points[0] == points[2])
-        {
-            Debug.LogWarning("Collider points are not distinct. Skipping collider creation.");
-            return;
-        }
+    //     // 頂点が重複していないかチェック
+    //     if (points[0] == points[1] || points[1] == points[2] || points[0] == points[2])
+    //     {
+    //         Debug.LogWarning("Collider points are not distinct. Skipping collider creation.");
+    //         return;
+    //     }
 
-        // 頂点間の距離が最小値以上あるかチェック
-        float minDistance = 0.01f; // 最小距離の閾値
-        if (Vector2.Distance(points[0], points[1]) < minDistance ||
-            Vector2.Distance(points[1], points[2]) < minDistance ||
-            Vector2.Distance(points[0], points[2]) < minDistance)
-        {
-            Debug.LogWarning("Collider points are too close. Skipping collider creation.");
-            return;
-        }
+    //     // 頂点間の距離が最小値以上あるかチェック
+    //     float minDistance = 0.01f; // 最小距離の閾値
+    //     if (Vector2.Distance(points[0], points[1]) < minDistance ||
+    //         Vector2.Distance(points[1], points[2]) < minDistance ||
+    //         Vector2.Distance(points[0], points[2]) < minDistance)
+    //     {
+    //         Debug.LogWarning("Collider points are too close. Skipping collider creation.");
+    //         return;
+    //     }
 
-        // 頂点を設定
-        polygonCollider.points = points;
+    //     // 頂点を設定
+    //     polygonCollider.points = points;
 
-        // デバッグ用に頂点の座標をログに出力
-        Debug.Log($"Collider Points: p1={points[0]}, p2={points[1]}, p3={points[2]}");
-    }
+    //     // デバッグ用に頂点の座標をログに出力
+    //     Debug.Log($"Collider Points: p1={points[0]}, p2={points[1]}, p3={points[2]}");
+    // }
 
     /// <summary>
     /// 位置を更新
