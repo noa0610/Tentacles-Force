@@ -6,14 +6,12 @@ public class Attack : MonoBehaviour
 {
     [Header("AttackParameter")]
     [SerializeField] private int AttackPower; // 攻撃力
-    [SerializeField] private int HitCount;    // 攻撃ヒット数
-    [SerializeField] private int Penetration; // 貫通力
-    [SerializeField] public UnitDate.Team OwnerTeam; // 攻撃を生成したチーム
+    [SerializeField] private UnitTags OwnerTeam; // 所属チーム
 
     private AttackDate attackDate;
     void Start()
     {
-        attackDate = new AttackDate(AttackPower, HitCount, Penetration, OwnerTeam);
+        
     }
 
     void Update()
@@ -25,15 +23,7 @@ public class Attack : MonoBehaviour
     {
         if(other.CompareTag("Enemy"))
         {
-            Enemy enemy = other.gameObject.GetComponent<Enemy>();
-            enemy.TakeDamage(attackDate.AttackPower);
-
-            Penetration --;
-
-            if(Penetration == 0)
-            {
-                Destroy(gameObject);
-            }
+            
         }
     }
 }
