@@ -21,7 +21,9 @@ public class PlayerStateManager
 
         _CurrentState.Exit(player);
         _CurrentState = nextState;
+        Debug.Log("StateChange : " + _CurrentState.ToString());
         _CurrentState.Enter(player);
+        
     }
 
     /// <summary>

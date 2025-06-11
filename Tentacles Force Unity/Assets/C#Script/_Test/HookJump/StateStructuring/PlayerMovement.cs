@@ -7,48 +7,23 @@ using UnityEngine;
 /// </summary>
 public class PlayerMovement : MonoBehaviour
 {
-    // TODO 1, 空中での動作の処理を作る（もしくは既存の処理を地上、空中で処理が切り替わるように変更する）
-    private readonly float GroundAccel = 10f;     // 地上の加速力
-    private readonly float MaxGroundSpeed = 8f;   // 地上の最大移動速度
-    private readonly float GroundBrakeForce = 2f; // 地上の移動停止力
-    private readonly float minVelocity = 0.1f;    // ブレーキをかける最小速度（この値になったら完全停止）
+    
+    private readonly float GroundAccel = 20f;      // 地上の加速力
+    private readonly float MaxGroundSpeed = 14f;   // 地上の最大移動速度
+    private readonly float GroundBrakeForce = 25f; // 地上の移動停止力
+    private readonly float minVelocity = 0.1f;     // ブレーキをかける最小速度（この値になったら完全停止）
 
-    private readonly float AirAccel = 8f;        // 空中の加速力
-    private readonly float MaxAirSpeed = 6f;      // 空中の最大移動速度
-    private readonly float TurnBrakeForce = 4f;   // 方向転換時のブレーキ力
+    private readonly float AirAccel = 8f;          // 空中の加速力
+    private readonly float MaxAirSpeed = 6f;       // 空中の最大移動速度
+    private readonly float TurnBrakeForce = 4f;    // 方向転換時のブレーキ力
 
-    private readonly float JumpForce = 15f;       // ジャンプ力
+    private readonly float RayLange = 0.4f;        // Rayの長さ（地面判定用）
+    private readonly float JumpForce = 15f;        // ジャンプ力
 
     private Rigidbody2D _rigidbody2D;
+    private Vector3 _facingDirection = Vector3.right; // 現在向いている方向
     private Vector2 _horizontalVelocity; // 水平方向の速度
     private Vector2 _verticalVelocity;   // 垂直方向の速度
-
-    private Vector3 _currentMoveInput;   // 現在の入力方向を保持
-    // プロパティで入力を管理
-    public Vector3 CurrentMoveInput
-    {
-        get => _currentMoveInput;
-        set
-        {
-            // 入力が変化した時の処理
-            if (_currentMoveInput != value)
-            {
-                OnMoveInputChanged(value);
-            }
-            _currentMoveInput = value;
-        }
-    }
-    private void OnMoveInputChanged(Vector3 newInput)
-    {
-        // ブレーキ中に入力が変化した場合の処理
-        if (_brakeCoroutine != null)
-        {
-            StopCoroutine(_brakeCoroutine);
-            _brakeCoroutine = null;
-        }
-    }
-
-    private Coroutine _brakeCoroutine;   // 方向転換ブレーキのコルーチンを保持
 
     void Awake()
     {
@@ -57,202 +32,161 @@ public class PlayerMovement : MonoBehaviour
 
 
     /// <summary>
-    /// 地上での左右移動
+    /// 水平方向の速度を計算する（移動ベクトル、加速度、最大速度を指定）
     /// </summary>
-    /// <param name="moveVec">移動する方向</param>
-    public void GroundSideMove(Vector3 moveVec)
+    /// <param name="moveVec"></param>
+    /// <param name="accel"></param>
+    /// <param name="maxSpeed"></param>
+    private void CalcHorizontalVelocity(Vector3 moveVec, float accel, float maxSpeed)
     {
-        Vector2 velocity = _rigidbody2D.velocity;
+        _horizontalVelocity = Vector3.MoveTowards(
+                                _horizontalVelocity,
+                                moveVec * maxSpeed,
+                                accel * Time.deltaTime);
+    }
 
-        // 現在の速度が最大値を超えていなければ
-        if (Mathf.Abs(velocity.x) < MaxGroundSpeed)
+    /// <summary>
+    /// 水平方向の速度を減速させる（加速度を指定）
+    /// </summary>
+    /// <param name="accel"></param>
+    private void CalcHorizontalVelocity(float accel)
+    {
+        _horizontalVelocity = Vector3.MoveTowards(
+                                _horizontalVelocity,
+                                Vector3.zero,
+                                accel * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// プレイヤーの向きを変更する
+    /// </summary>
+    /// <param name="moveVec"></param>
+    public void Direction(Vector3 moveVec)
+    {
+        if (moveVec.x != 0f)
         {
-            // 継続的に力を加えて移動
-            _rigidbody2D.AddForce(new Vector2(moveVec.x * GroundAccel, 0), ForceMode2D.Force);
+            bool isLeft = moveVec.x < 0;
+            Vector3 newLocalScale = transform.localScale;
+            if (isLeft && newLocalScale.x > 0 || !isLeft && newLocalScale.x < 0)
+            {
+                // 向きが変わる場合のみ処理
+                newLocalScale.x *= -1f; // スケールを反転させて向きを変える
+                transform.localScale = newLocalScale;
+            }
         }
     }
 
     /// <summary>
-    /// 移動を徐々に停止させる
+    /// -1で左、1で右
     /// </summary>
-    public void GroundMoveStop()
+    /// <returns></returns>
+    public Vector3 GetDirection()
     {
-        // 既にストップ用のコルーチンが動いていれば処理しない
-        if (_brakeCoroutine != null) return;
-
-        // 停止処理を開始
-        _brakeCoroutine = StartCoroutine(NaturalMoveStop());
+        return transform.localScale.x < 0 ? Vector3.left : Vector3.right;
     }
-    private IEnumerator NaturalMoveStop()
-    {
-        // 停止処理開始時の移動方向を保存
-        float initialDirection = Mathf.Sign(_rigidbody2D.velocity.x);
 
-        // 速度が最小値以上の間、処理を続ける
-        while (Mathf.Abs(_rigidbody2D.velocity.x) > minVelocity)
+    /// <summary>
+    /// 地上移動を行う
+    /// </summary>
+    /// <param name="moveVec"></param>
+    public void GroundMove(Vector3 moveVec)
+    {
+        CalcHorizontalVelocity(moveVec, GroundAccel, MaxGroundSpeed);
+    }
+
+    /// <summary>
+    /// 地上移動を行う（加速倍率指定可能）
+    /// </summary>
+    /// <param name="moveVec"></param>
+    /// <param name="addAccelMultiple"></param>
+    public void GroundMove(Vector3 moveVec, float addAccelMultiple)
+    {
+        CalcHorizontalVelocity(moveVec, GroundAccel * addAccelMultiple, MaxGroundSpeed * addAccelMultiple);
+    }
+
+    /// <summary>
+    /// スライド移動（攻撃モーション時の移動など）
+    /// </summary>
+    public void GroundMoveBrake()
+    {
+        CalcHorizontalVelocity(GroundBrakeForce);
+    }
+
+    /// <summary>
+    /// 空中移動を行う
+    /// </summary>
+    /// <param name="moveVec"></param>
+    public void AirMove(Vector3 moveVec)
+    {
+        CalcHorizontalVelocity(moveVec, AirAccel, MaxAirSpeed);
+    }
+
+    /// <summary>
+    /// ジャンプ処理（Y軸方向の速度をセット）
+    /// </summary>
+    public void Jump()
+    {
+        _verticalVelocity.y = JumpForce;
+    }
+
+    public void ActionJump(Vector2 direction, float jumpForce)
+    {
+        _verticalVelocity = direction * jumpForce;
+        _horizontalVelocity = direction * jumpForce;
+    }
+    
+    public void SetVelocityZero()
+    {
+        _horizontalVelocity.y = 0f;
+    }
+
+    /// <summary>
+    /// 空中にいるかを判定する
+    /// </summary>
+    /// <returns></returns>
+    public bool AirJudge()
+    {
+        var collider = GetComponent<Collider2D>(); // プレイヤーのコライダー取得
+        float rayStartHeight = collider.bounds.min.y; // コライダーの底＋少し浮かせる
+        var rayStart = new Vector3(transform.position.x, rayStartHeight, transform.position.z);
+        var ray = new Ray(rayStart, Vector3.down);
+        var layerMask = LayerMask.GetMask("Ground");
+
+
+        // プレイヤーの下方向にSphereCastを行い、地面との接触を判定
+        if (!Physics2D.Raycast(rayStart, Vector2.down * 0.2f, RayLange, layerMask))
         {
-            // 現在の速度を取得
-            Vector2 velocity = _rigidbody2D.velocity;
-
-            // 現在の移動方向をチェック
-            float currentDirection = Mathf.Sign(velocity.x);
-
-            // 移動方向が反転した場合は処理を終了
-            if (currentDirection != initialDirection)
-            {
-                break;
-            }
-
-            // 入力があった場合は処理を終了
-            if (_currentMoveInput.x != 0)
-            {
-                break;
-            }
-
-            // 現在の速度に応じた減速力を計算
-            float brakeForce = Mathf.Abs(velocity.x) * GroundBrakeForce;
-
-            // 速度が小さくなるほど減速力を弱める（より自然な停止に見えるよう調整）
-            float speedRatio = Mathf.Abs(velocity.x) / MaxGroundSpeed;
-            brakeForce *= Mathf.Lerp(0.5f, 1f, speedRatio);
-
-            // 現在の進行方向と逆向きに力を加えて減速
-            _rigidbody2D.AddForce(new Vector2(-currentDirection * brakeForce, 0), ForceMode2D.Force);
-
-            yield return null;
+            Debug.DrawRay(rayStart, Vector2.down * 0.2f, Color.green, RayLange);
+            return true; // 地面に接触していない（空中）
         }
-
-        // 完全に停止（微小な速度を0にする）
-        _rigidbody2D.velocity = new Vector2(0, _rigidbody2D.velocity.y);
-        _brakeCoroutine = null;
+        Debug.DrawRay(rayStart, Vector2.down * 0.2f, Color.red, RayLange);
+        return false; // 地面に接触している
     }
 
     /// <summary>
-    /// 振り向き
+    /// 現在のRigidbodyの速度を取得して分解
     /// </summary>
-    /// <param name="turnVec">向く方向</param>
-    public void Turnaround(Vector3 turnVec)
+    public void GetVelocity()
     {
-        // 入力がない場合は処理を終了
-        if (turnVec.x == 0) return;
-
-        // Y軸の回転を変更（右向きが0度、左向きが180度）
-        float rotationY = turnVec.x > 0 ? 0 : 180;
-        transform.rotation = Quaternion.Euler(0, rotationY, 0);
+        var velocity = _rigidbody2D.velocity;
+        _horizontalVelocity = new Vector3(velocity.x, 0.0f, 0.0f);
+        _verticalVelocity = new Vector3(0.0f, velocity.y, 0.0f);
     }
 
     /// <summary>
-    /// 方向転換するとき、徐々に速度を落とすブレーキ処理を開始
+    /// 計算した速度をRigidbodyに適用
     /// </summary>
-    public void MoveBrake(Vector3 moveVec)
+    public void SetVelocity()
     {
-        Vector2 velocity = _rigidbody2D.velocity;
-
-        // 入力がない場合は処理を行わない
-        if (moveVec.x == 0) return;
-
-        // 移動方向とは逆方向への入力があり、かつ現在の速度が一定以上ならブレーキ処理開始
-        if (Mathf.Sign(velocity.x) != Mathf.Sign(moveVec.x) && Mathf.Abs(velocity.x) > 0.1f)
-        {
-            // ブレーキ中であれば
-            if (_brakeCoroutine != null)
-            {
-                // ブレーキ処理を止める
-                StopCoroutine(_brakeCoroutine);
-            }
-            // ブレーキ処理を開始する
-            _brakeCoroutine = StartCoroutine(TurnBrake());
-        }
-    }
-    private IEnumerator TurnBrake()
-    {
-        // 方向転換前の移動方向を保存
-        float initialDirection = Mathf.Sign(_rigidbody2D.velocity.x);
-
-        // 方向転換時の入力方向(直前の移動方向の逆)を保存
-        float initialInputDirection = Mathf.Sign(_currentMoveInput.x);
-
-        // 速度がほぼ0になるまで処理
-        while (Mathf.Abs(_rigidbody2D.velocity.x) > minVelocity)
-        {
-            // 現在の速度を取得
-            Vector2 velocity = _rigidbody2D.velocity;
-
-            // 現在の移動方向をチェック
-            float currentDirection = Mathf.Sign(velocity.x);
-
-            // 現在の入力方向をチェック
-            float currentInputDirection = Mathf.Sign(_currentMoveInput.x);
-
-            // 移動方向が反転したか、入力方向が変化した場合
-            if (currentDirection != initialDirection ||
-                currentInputDirection != initialInputDirection)
-            {
-                break;
-            }
-
-            // 速度の向きとは逆方向にブレーキ力を加える
-            float brakeForce = Mathf.Abs(velocity.x) * TurnBrakeForce; // 速度に比例した減速力
-            _rigidbody2D.AddForce(new Vector2(-currentDirection * brakeForce, 0), ForceMode2D.Force);
-
-            yield return null;
-        }
-
-        // 完全に停止
-        _rigidbody2D.velocity = new Vector2(0, _rigidbody2D.velocity.y);
-        _brakeCoroutine = null;
-    }
-
-
-    /// <summary>
-    /// ジャンプ処理
-    /// </summary>
-    public void GroundJump()
-    {
-        // 既存の上下速度をリセット
-        _rigidbody2D.velocity = new Vector2(_rigidbody2D.velocity.x, 0);
-
-        // 瞬間的に力を加えてジャンプ
-        _rigidbody2D.AddForce(Vector2.up * JumpForce, ForceMode2D.Impulse);
+        _rigidbody2D.velocity = _horizontalVelocity + _verticalVelocity;
     }
 
     /// <summary>
-    /// 特殊なアクションによるジャンプ処理
+    /// 速度をリセットする（Rigidbodyの速度を0にする）
     /// </summary>
-    /// <param name="direciton">単位ベクトル</param>
-    /// <param name="jumpForce">ジャンプ力</param>
-    public void ActionJump(Vector2 direciton, float jumpForce)
+    public void ResetVelocity()
     {
-        // 現在の速度をリセット
-        _rigidbody2D.velocity = new Vector2(0, 0);
-
-        // 単位ベクトルの方向にジャンプ
-        _rigidbody2D.AddForce(direciton * jumpForce, ForceMode2D.Impulse);
-    }
-
-    /// <summary>
-    /// 地面判定取得
-    /// </summary>
-    public bool CheckGround()
-    {
-        bool _isGround;
-
-        float rayLength = 0.2f;
-
-        var layerMask = LayerMask.GetMask(new string[] { "Ground" });
-
-        // コライダーを取得
-        Collider2D col = GetComponent<Collider2D>();
-
-        // コライダーの最下の位置を取得
-        Vector2 bottomPosition = new Vector2(col.bounds.center.x, col.bounds.min.y);
-
-        // レイを下方向に発射して、地面に接触したか判定を行う
-        _isGround = Physics2D.Raycast(bottomPosition, Vector2.down, rayLength, layerMask);
-
-        // シーン上でレイを表示（緑で表示、判定取得で赤で表示）
-        Debug.DrawRay(bottomPosition, Vector2.down * rayLength, _isGround ? Color.green : Color.red);
-
-        return _isGround;
+        _horizontalVelocity = Vector3.zero;
+        _verticalVelocity = Vector3.zero;
     }
 }

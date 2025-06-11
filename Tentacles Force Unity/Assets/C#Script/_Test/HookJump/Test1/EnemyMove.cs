@@ -94,6 +94,30 @@ public class EnemyMove : MonoBehaviour
         ChaseMove(target);
     }
 
+    private void StateTransition(EnemyState newState)
+    {
+        if (currentState == EnemyState.Chase)
+        {
+
+        }
+        else if (currentState == EnemyState.Idle)
+        { 
+
+        }
+
+        if (newState == EnemyState.Chase)
+        {
+
+        }
+        else if (newState == EnemyState.Idle)
+        {
+
+        }
+        
+        // 状態遷移時の処理（必要に応じて）
+            currentState = newState;
+    }
+
     // ターゲットを追跡する
     private void ChaseMove(GameObject target)
     {

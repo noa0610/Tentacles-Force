@@ -623,12 +623,20 @@ MonoBehaviour:
   - {fileID: 1469102009}
   - {fileID: 969443365}
   - {fileID: 2091546008}
+  - {fileID: 146313575}
+  - {fileID: 187923340}
   - {fileID: 1052957425}
   - {fileID: 1094918623}
   - {fileID: 749893473}
-  - {fileID: 187923340}
-  - {fileID: 146313575}
-  SCENE_NAME: []
+  SCENE_NAME:
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
+  - StageSelectScene
   SE_CHANGE_NAME: 
   SE_SELECT_NAME: 
 --- !u!1 &537207336
@@ -1952,7 +1960,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c138ba2d55e6ca2428fe72eb1c6750a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalStages: 4
+  totalStages: 8
 --- !u!4 &1736189612
 Transform:
   m_ObjectHideFlags: 0

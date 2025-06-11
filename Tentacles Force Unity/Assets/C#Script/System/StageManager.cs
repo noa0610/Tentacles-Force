@@ -24,11 +24,12 @@ public class StageManager : MonoBehaviour
         {
             Destroy(gameObject); // 同じものがあれば消去
         }
+        LoadStageData(); // ステージの解放状態をロード
     }
 
     private void Start()
     {
-        LoadStageData(); // ステージの解放状態をロード
+        
     }
 
     // 指定された数値のステージが解放されているか判定
@@ -36,6 +37,7 @@ public class StageManager : MonoBehaviour
     {
         if (stageUnlocked == null || stageIndex >= stageUnlocked.Count)
         {
+            // stageUnlockedがnullまたはインデックスが範囲外の場合のエラーハンドリング
             Debug.LogError("stageUnlocked is not initialized or index is out of range!");
             return false; // エラー回避
         }
