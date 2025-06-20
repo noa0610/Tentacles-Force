@@ -63,11 +63,18 @@ public class AirHookFireState : IPlayerState
         }
         // -----------------------------------------------
 
-        // フックが命中したらフック命中状態に遷移
+        // ================================================フック命中
+        // 地面に命中したらHit状態に遷移
         if (player.Hook.currentHookState == HookSystem.HookState.Hit)
         {
             player.StateTransition(this, new AirHookHitState());
         }
+        // 敵に命中したらEnemyHit状態に遷移
+        else if (player.Hook.currentHookState == HookSystem.HookState.EnemyHit)
+        {
+            player.StateTransition(this, new HookAttackState());
+        }
+        // -----------------------------------------------
 
         player.Move.SetVelocity(); // 計算した速度をセット
     }

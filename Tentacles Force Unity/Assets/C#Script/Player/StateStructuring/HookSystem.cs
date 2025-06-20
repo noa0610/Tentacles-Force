@@ -19,9 +19,9 @@ public class HookSystem : MonoBehaviour
     [SerializeField] private GameObject HookPrefab; // フックのプレハブ
     [SerializeField] private GameObject HookFirePoint; // フックの発射位置
     [SerializeField] private float HookLengthMax = 10f; // フックの最大距離
+    [SerializeField] private float HookHitLengthMax = 15f; // フックのヒット時の最大距離
     [SerializeField] private float RetractSpeed = 15f; // フックの伸ばす速度
     [SerializeField] private float RewindSpeed = 20f; // フックの巻き戻し速度
-    [SerializeField] private float JumpSpeedmultiplier = 2f; // フックジャンプの速度倍率
     [SerializeField] private LayerMask GroundLayer; // 地面のレイヤー
     [SerializeField] private LayerMask EnemyLayer; // 敵のレイヤー
     [SerializeField] private Material RopeMaterial; // ロープのマテリアル
@@ -31,7 +31,9 @@ public class HookSystem : MonoBehaviour
     private GameObject hook;
     private Vector3 currentMousePos;    // マウスの位置
     private Vector3 hookTargetPosition; // フックのターゲット位置
+    private GameObject enemy;
     private bool isHookMaxLength = false;
+    private bool isHookHitMaxLength = false;
     private float initialDistance;
     private Rigidbody2D _rb2DHook;
     private SpriteRenderer _sprRenHook;
@@ -44,7 +46,8 @@ public class HookSystem : MonoBehaviour
         Idle,
         Fire,
         Rewind,
-        Hit
+        Hit,
+        EnemyHit
     }
     public HookState currentHookState = HookState.Idle;
 
@@ -54,7 +57,7 @@ public class HookSystem : MonoBehaviour
         {
             HookFirePoint = this.gameObject; // フックの発射位置をこのゲームオブジェクトに設定
         }
-        
+
         firstFirePoint = HookFirePoint.transform.position; // 初期のフックの発射位置を記録
 
         // 初期化処理
@@ -208,9 +211,8 @@ public class HookSystem : MonoBehaviour
         // プレイヤーとマウスの距離がフックの最大の長さを超えていれば
         if (GetMouseDistance() >= HookLengthMax)
         {
-            Debug.Log("フックの長さが最大になりました。");
             currentMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            currentMousePos.z = 0; // マウスのZ座標を0に設定
+            currentMousePos.z = 0;
 
             Vector3 direction = (currentMousePos - HookFirePoint.transform.position).normalized;
 
@@ -224,10 +226,8 @@ public class HookSystem : MonoBehaviour
         // 発射位置とマウスの距離がフックの最大の長さより短くなっていれば
         else if (GetMouseDistance() < HookLengthMax)
         {
-            Debug.Log("フックの長さが最大より短くなりました。");
-
             currentMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            currentMousePos.z = 0; // マウスのZ座標を0に設定
+            currentMousePos.z = 0;
             hook.transform.position = currentMousePos;
 
             HookRotation();
@@ -240,6 +240,11 @@ public class HookSystem : MonoBehaviour
     /// </summary>
     public void HitUpdate()
     {
+        if (GetHookDistance() >= HookHitLengthMax)
+        { 
+            isHookHitMaxLength = true; // フックがヒットした最大距離に達したことを記録
+        }
+
         currentMousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         currentMousePos.z = 0; // マウスのZ座標を0に設定
 
@@ -247,8 +252,15 @@ public class HookSystem : MonoBehaviour
         RopeLineRenderer();
     }
 
+    public void AttackUpdate()
+    {
+        hook.transform.position = enemy.transform.position; // フックを敵の位置に合わせる
+        HookRotation();
+        RopeLineRenderer();
+    }
 
-    // フックがマウスに垂直になるように回転する処理
+
+    // フックが発射位置に垂直になるように回転する処理
     private void HookRotation()
     {
         // フックの位置を取得
@@ -260,7 +272,7 @@ public class HookSystem : MonoBehaviour
         // フックと発射位置のベクトルを計算
         Vector3 direction = (hookPos - firePos).normalized;
 
-        // フックの位置が発射位置より後方にある場合
+        // フックの位置が発射位置より左にある場合
         if (hookPos.x < firePos.x)
         {
             _sprRenHook.flipY = true; // フックのスプライトを反転
@@ -315,31 +327,55 @@ public class HookSystem : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if (currentHookState == HookState.Rewind) return;
+
         // フックが地面に当たった場合
         if (collision.gameObject.layer == GroundLayer)
         {
-            // フックの位置を記録
+            // 命中した位置を記録
             hookTargetPosition = collision.transform.position;
-
-            // フックの状態をヒットに変更
             currentHookState = HookState.Hit;
+        }
+        // フックが敵にあたった場合
+        else if (collision.gameObject.layer == EnemyLayer)
+        {
+            // フックが敵に当たった場合の処理
+            enemy = collision.gameObject;
+            currentHookState = HookState.EnemyHit;
+            Debug.Log("フックが敵に当たりました: " + collision.gameObject.name);
         }
     }
 
     /// フックのロープがヒットした位置を取得する処理
     public void GetRopeRayPoint()
     {
+        if (currentHookState == HookState.Rewind) return;
+
+        int combinedLayerMask = GroundLayer | EnemyLayer;
+
         // 自分とフックの位置の2点で繋いでレイを飛ばす
-        RaycastHit2D hit = Physics2D.Linecast(HookFirePoint.transform.position, hook.transform.position, GroundLayer);
+        RaycastHit2D hit = Physics2D.Linecast(HookFirePoint.transform.position, hook.transform.position, combinedLayerMask);
 
         // 命中した場合
         if (hit.collider != null && currentHookState == HookState.Fire)
         {
-            // フックの位置を記録
-            hookTargetPosition = hit.point;
+            // 命中したオブジェクトのレイヤーで分岐
+            int hitLayer = hit.collider.gameObject.layer;
 
-            // フックの状態をヒットに変更
-            currentHookState = HookState.Hit;
+            // 地面にヒット
+            if ((GroundLayer.value & (1 << hitLayer)) != 0)
+            {
+                hookTargetPosition = hit.point;
+                currentHookState = HookState.Hit;
+            }
+            // 敵にヒット
+            else if ((EnemyLayer.value & (1 << hitLayer)) != 0)
+            {
+                enemy = hit.collider.gameObject;
+                currentHookState = HookState.EnemyHit;
+                Debug.Log("敵にヒット: " + hit.collider.gameObject.name);
+                // ここで敵への追加処理
+            }
         }
     }
 
@@ -358,6 +394,11 @@ public class HookSystem : MonoBehaviour
     public Vector2 GetHitPoint()
     {
         return hookTargetPosition;
+    }
+
+    public GameObject GetEnemy()
+    {
+        return enemy;
     }
 
     public Vector2 GetHookDirection()

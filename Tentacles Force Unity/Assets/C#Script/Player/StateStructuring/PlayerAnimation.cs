@@ -24,7 +24,6 @@ public class PlayerAnimation : MonoBehaviour
                 if (!_clipLengthDict.ContainsKey(clip.name))
                 {
                     _clipLengthDict.Add(clip.name, clip.length);
-                    Debug.Log($"Cached clip: {clip.name}, Length: {clip.length}");
                 }
             }
         }

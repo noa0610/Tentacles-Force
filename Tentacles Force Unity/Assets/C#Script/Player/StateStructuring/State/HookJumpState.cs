@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class HookJumpState : IPlayerState
 {
-    float chengeTime = 0;
-    float maxChengeTime = 0.5f; // ジャンプの持続時間
+    float _exitTime = 0;
+    float _maxExitTime = 0.5f; // ジャンプの持続時間
 
     public void Enter(Player2 player)
     {
@@ -15,12 +15,13 @@ public class HookJumpState : IPlayerState
         // フックの方向に向きを更新
         player.Move.Direction(player.Hook.GetHookDirection());
 
+        SoundManager.Instance.PlaySE("jump09_HookJump"); // ジャンプ音を再生
         player.Anime.Animator.SetBool("HookJump", true);
     }
 
     public void Execute(Player2 player, InputInformation input)
     {
-        chengeTime += Time.deltaTime;
+        _exitTime += Time.deltaTime;
 
         // 現在の速度を取得
         player.Move.GetVelocity();
@@ -34,7 +35,7 @@ public class HookJumpState : IPlayerState
         // ------------------------------------------------
 
         // ================================================地面接地
-        if (chengeTime >= maxChengeTime)
+        if (_exitTime >= _maxExitTime)
         {
             if (player.Move.AirJudge())
             {

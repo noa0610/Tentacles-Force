@@ -9,15 +9,22 @@ public class Player2 : MonoBehaviour
 {
     public PlayerStateManager _stateManager;
     public HookSystem Hook { get; private set; }
-    public PlayerMovement Move { get; private set; }
+    public UnitMovement Move { get; private set; }
     public PlayerAnimation Anime { get; private set; }
+    public Attack Attack { get; private set; }
     public GameObject Object { get; private set; }
 
     void Awake()
     {
-        Move = gameObject.AddComponent<PlayerMovement>();
+        Move = gameObject.AddComponent<UnitMovement>();
         Anime = gameObject.AddComponent<PlayerAnimation>();
+        Attack = gameObject.GetComponentInChildren<Attack>();
+        if (Attack == null)
+        {
+            Debug.LogError("Attack component is not found in Player2 GameObject.");
+        }
         Hook = gameObject.GetComponent<HookSystem>();
+
         Object = gameObject;
         if (Hook == null)
         {
@@ -59,8 +66,4 @@ public class Player2 : MonoBehaviour
         _stateManager.Transition(this, fromState, nextState);
     }
 
-    public T GetBehaviour<T>() where T : StateMachineBehaviour
-    {
-        return Anime.Animator.GetBehaviour<T>();
-    }
 }

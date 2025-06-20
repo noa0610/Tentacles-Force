@@ -14,15 +14,15 @@ public class HookFireState : IPlayerState
         {
             player.Hook.ResetPosision(player.Object.transform.position);
         }
-        
+
         // クリップが "Move"なら"Walk_Fire"に切り替える
         string currentClip = player.Anime.GetCurrentClipName();
-        if (currentClip == "Walk" || currentClip == "Idle")
+        if (currentClip == "Walk")
         {
             player.Anime.PlayIfChanged("Walk_Fire", player.Anime.GetSavedNormalizedTime());
             player.Anime.Animator.SetBool("Move", false);
             player.Anime.Animator.SetBool("Idle_Fire", false);
-            player.Anime.Animator.SetBool("Move_Fire", true);
+            player.Anime.Animator.SetBool("Move_Fire", false);
         }
 
         // フックを発射
@@ -54,6 +54,7 @@ public class HookFireState : IPlayerState
         // ================================================ジャンプ
         if (input.Jump && !player.Move.AirJudge())
         {
+            player.Anime.Animator.SetBool("Idle_Fire", false);
             player.Move.Jump(); // ジャンプ処理を実行
             player.StateTransition(this, new AirHookFireState());
         }
@@ -71,20 +72,30 @@ public class HookFireState : IPlayerState
         // マウス左入力がなかったら
         else if (!input.MouseLeft)
         {
+            player.Anime.Animator.SetBool("Idle_Fire", false);
             player.Hook.StartRewind(); // フックを巻き戻す
             player.StateTransition(this, new GroundMoveState());
         }
         // -----------------------------------------------
 
-        // フックが命中したらフック命中状態に遷移
+
+        // ================================================フック命中
+        // 地面に命中したらHit状態に遷移
         if (player.Hook.currentHookState == HookSystem.HookState.Hit)
         {
             player.StateTransition(this, new HookHitState());
         }
+        // 敵に命中したらEnemyHit状態に遷移
+        else if (player.Hook.currentHookState == HookSystem.HookState.EnemyHit)
+        {
+            player.StateTransition(this, new HookAttackState());
+        }
+        // -----------------------------------------------
 
         // ================================================空中移動の移行
         if (player.Move.AirJudge())
         {
+            player.Anime.Animator.SetBool("Idle_Fire", false);
             player.Anime.Animator.SetBool("Move_Fire", false);
             player.StateTransition(this, new AirHookFireState());
         }
@@ -101,6 +112,5 @@ public class HookFireState : IPlayerState
         {
             player.Anime.UpdateCurrentNormalizedTime();
         }
-        player.Anime.Animator.SetBool("Idle_Fire", false);
     }
 }

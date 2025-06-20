@@ -57,5 +57,6 @@ public class PlayerInputDetection : MonoBehaviour
     private void InputClear()
     {
         _inputInformation.Jump = false;
+        _inputInformation.MouseRight = false;
     }
 }
