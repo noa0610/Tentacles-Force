@@ -221,6 +221,7 @@ public class EnemyMove : MonoBehaviour
             _rigidbody2D.velocity = Vector2.zero;
             ResetRotation(); // 回転をリセット
             _animator.SetBool("Attack", false);
+            _attack.HitOff(); // 攻撃を無効にする
         }
         else if (currentState == EnemyState.Damage)
         {
@@ -239,7 +240,7 @@ public class EnemyMove : MonoBehaviour
         }
         else if (newState == EnemyState.Contact)
         {
-            SoundManager.Instance.PlaySE("決定ボタンを押す48_EnemyContact"); // 接触音を再生
+            SoundManager.Instance.PlaySE("決定ボタンを押す48_EnemyContact");
             ExitTimer = 0f;
             _animator.SetBool("Contact", true);
         }
@@ -248,6 +249,8 @@ public class EnemyMove : MonoBehaviour
             ExitTimer = 0f;
             Rotation(target); // ターゲットの方向を向く
             _animator.SetBool("Attack", true);
+            _attack.IDListClear(); // ヒットIDリストをクリア
+            _attack.HitOn(); // 攻撃を有効にする
         }
         else if (newState == EnemyState.Damage)
         {

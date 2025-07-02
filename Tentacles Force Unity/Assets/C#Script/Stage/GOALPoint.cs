@@ -14,19 +14,13 @@ public class GOALPoint : MonoBehaviour
     [Header("ゴール時のSE")]
     [SerializeField] private string SE_NAME;           // SEの名前
 
-    // [Header("次のシーン名を入力")]
-    // [SerializeField] private string SCENE_CHANGE_NAME; // 遷移するシーン名
-
-    // [Header("シーン遷移までの時間")]
-    // [SerializeField] private float SCENE_CHANGE_TIME; // シーン遷移までの時間
-
-    private void Awake()
+    private void Start()
     {
-        GameManager.Instance.IsGOAL = false; // ゴールフラグを戻す
+        GameManager.Instance.currentGameState = GameState.Game; // ゲーム状態をゲームに設定
     }
 
     // オブジェクトすり抜け判定取得
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.gameObject.CompareTag("Player")) // プレイヤータグに接触したら
         {
@@ -40,8 +34,7 @@ public class GOALPoint : MonoBehaviour
                 SoundManager.Instance.PlaySE(SE_NAME); // SEを再生
             }
 
-            GameManager.Instance.IsGOAL = true; // ゴールフラグを立てる
-            GameManager.Instance.IsGame = false; // ゲーム終了
+            GameManager.Instance.CurrentGameState = GameState.Clear; // ゲーム状態をクリアに設定
             // SceneChangeManager.Instance.ChangeSceneLoad(SCENE_CHANGE_NAME, SCENE_CHANGE_TIME); // 一定時間待機後シーン遷移
         }
     }

@@ -34,6 +34,7 @@ public class UnitBase : MonoBehaviour
     {
         get { return _isInvincible; }
     }
+    private Coroutine _invincibleCoroutine; // 無敵状態のコルーチン
 
 
     private void Start()
@@ -70,13 +71,41 @@ public class UnitBase : MonoBehaviour
             Daed(); // HPが0以下になったら死亡処理
         }
 
-        StartCoroutine(InvincibilityCoroutine()); // 無敵状態のコルーチンを開始
+        if (_invincibleCoroutine != null)
+        {
+            StopCoroutine(_invincibleCoroutine);
+        }
+
+        _invincibleCoroutine = StartCoroutine(InvincibilityCoroutine()); // 無敵状態のコルーチンを開始
     }
 
     private IEnumerator InvincibilityCoroutine()
     {
         _isInvincible = true;
         yield return new WaitForSeconds(InvincibleTime);
+        _isInvincible = false;
+        _invincibleCoroutine = null; // コルーチンを終了
+    }
+
+    public void InvincibilityOn()
+    {
+        // 既存の無敵コルーチンがあれば停止
+        if (_invincibleCoroutine != null)
+        {
+            StopCoroutine(_invincibleCoroutine);
+            _invincibleCoroutine = null;
+        }
+        _isInvincible = true;
+    }
+
+    public void InvincibilityOff()
+    {
+        // 既存の無敵コルーチンがあれば停止
+        if (_invincibleCoroutine != null)
+        {
+            StopCoroutine(_invincibleCoroutine);
+            _invincibleCoroutine = null;
+        }
         _isInvincible = false;
     }
 

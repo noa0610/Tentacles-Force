@@ -10,6 +10,8 @@ public class HookAttackState : IPlayerState
 
     public void Enter(Player2 player)
     {
+        player.ResetAlpha(); // プレイヤーの透明度をリセット
+        
         enemy = player.Hook.GetEnemy(); // フックが命中した敵のGameObjectを取得
 
         // アニメーションの設定
@@ -25,6 +27,8 @@ public class HookAttackState : IPlayerState
         player.Attack.AttackData.target = enemy; // 攻撃対象を設定
         player.Attack.Init();  // 攻撃の初期化
         player.Attack.HitOn(); // 攻撃を有効にする
+
+        player.Status.InvincibilityOn(); // 無敵状態にする
     }
 
     public void Execute(Player2 player, InputInformation input)
@@ -67,5 +71,7 @@ public class HookAttackState : IPlayerState
         player.Move.Direction(enemy.transform.position - player.transform.position); // 向きを敵の方向に設定
 
         player.Anime.Animator.SetBool("HookAttack", false);
+
+        player.Status.InvincibilityOff(); // 無敵状態を解除
     }
 }

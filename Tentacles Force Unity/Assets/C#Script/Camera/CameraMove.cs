@@ -28,17 +28,17 @@ public class CameraMove : MonoBehaviour
         {
             // シーン内のインスタンス化されたプレイヤーを取得
             PLAYER = GameObject.FindGameObjectWithTag("Player");
-            
+
             if (PLAYER == null)
             {
                 Debug.LogError("シーン内に 'Player' タグが付いたオブジェクトが見つかりません。");
             }
         }
-        
-        if (PLAYER != null)
-        {
-            transform.position = PLAYER.transform.position + OFFSET;
-        }
+
+        // if (PLAYER != null)
+        // {
+        //     transform.position = PLAYER.transform.position + OFFSET;
+        // }
     }
 
     void LateUpdate()
@@ -56,5 +56,30 @@ public class CameraMove : MonoBehaviour
         // 現在のカメラ位置からターゲット位置への移動を滑らかにする
         Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, SmoothSpeed);
         transform.position = smoothedPosition;
+    }
+    
+    void OnDrawGizmosSelected()
+    {
+        // カメラの映し出せる制限範囲を描画
+        if (Camera.main != null)
+        {
+            Gizmos.color = Color.blue;
+
+            // カメラのサイズとアスペクト比から視野範囲を計算
+            float cameraHeight = Camera.main.orthographicSize * 2;
+            float cameraWidth = cameraHeight * Camera.main.aspect;
+
+            // 映し出せる範囲の四隅を計算
+            Vector3 visibleBottomLeft = new Vector3(MinX - cameraWidth / 2, MinY - cameraHeight / 2, 0);
+            Vector3 visibleBottomRight = new Vector3(MaxX + cameraWidth / 2, MinY - cameraHeight / 2, 0);
+            Vector3 visibleTopLeft = new Vector3(MinX - cameraWidth / 2, MaxY + cameraHeight / 2, 0);
+            Vector3 visibleTopRight = new Vector3(MaxX + cameraWidth / 2, MaxY + cameraHeight / 2, 0);
+
+            // 映し出せる範囲を矩形で描画
+            Gizmos.DrawLine(visibleBottomLeft, visibleBottomRight);
+            Gizmos.DrawLine(visibleBottomRight, visibleTopRight);
+            Gizmos.DrawLine(visibleTopRight, visibleTopLeft);
+            Gizmos.DrawLine(visibleTopLeft, visibleBottomLeft);
+        }
     }
 }

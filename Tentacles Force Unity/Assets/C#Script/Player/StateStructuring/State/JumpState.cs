@@ -44,6 +44,9 @@ public class JumpState : IPlayerState
             player.StateTransition(this, new AirMoveState());
         }
 
+        // ================================================無敵状態の点滅処理
+        player.InvincibleFlashing();
+        // -----------------------------------------------
 
         // 計算した速度をセット
         player.Move.SetVelocity();
