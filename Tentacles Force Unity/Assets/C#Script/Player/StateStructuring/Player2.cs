@@ -15,6 +15,7 @@ public class Player2 : MonoBehaviour
     public UnitBase Status { get; private set; }
     public GameObject Object { get; private set; }
     public SpriteRenderer SprRen { get; private set; }
+    public Collider2D Coll { get; private set; }
     private float _invincibleFlashingTime = 0.15f; // 無敵状態の点滅間隔
     private float Timer = 0f; // 無敵状態の点滅タイマー
     void Awake()
@@ -47,6 +48,7 @@ public class Player2 : MonoBehaviour
         }
 
         SprRen = GetComponent<SpriteRenderer>();
+        Coll = GetComponent<Collider2D>();
     }
 
 
@@ -109,4 +111,11 @@ public class Player2 : MonoBehaviour
         }
     }
 
+    public void ChackDead()
+    {
+        if (Status.IsDead)
+        {
+            StateTransition(_stateManager._CurrentState, new DeadState());
+        }
+    }
 }

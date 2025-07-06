@@ -39,7 +39,23 @@ public class UIButtonSelect : MonoBehaviour
         {
             Debug.LogError("SELECT_BUTTUNSとSCENE_NAMEの要素数が一致していません。");
         }
-        
+
+        // 各ボタンにクリックイベントを追加
+        for (int i = 0; i < SELECT_BUTTUNS.Length; i++)
+        {
+            int index = i; // ローカル変数でキャプチャ
+            SELECT_BUTTUNS[i].onClick.AddListener(() =>
+            {
+                selectedButtunIndex = index;
+                HighlightSelectedButton();
+                if (SE_SELECT_NAME != null)
+                {
+                    SoundManager.Instance.PlaySE(SE_SELECT_NAME);
+                }
+                SelectButtun(index);
+            });
+        }
+
         HighlightSelectedButton(); // 最初のボタンをハイライト（選択状態）
     }
 
@@ -105,7 +121,7 @@ public class UIButtonSelect : MonoBehaviour
             {
                 SoundManager.Instance.PlaySE(SE_SELECT_NAME); // SEを再生
             }
-            
+
             SelectButtun(selectedButtunIndex);
 
             Debug.Log($"{selectedButtunIndex}");

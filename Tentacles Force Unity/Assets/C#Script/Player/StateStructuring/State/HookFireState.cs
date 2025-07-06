@@ -31,6 +31,8 @@ public class HookFireState : IPlayerState
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+
         player.Move.GetVelocity(); // 現在の速度を取得
 
         // ================================================地面移動
@@ -83,11 +85,13 @@ public class HookFireState : IPlayerState
         // 地面に命中したらHit状態に遷移
         if (player.Hook.currentHookState == HookSystem.HookState.Hit)
         {
+            SoundManager.Instance.PlaySE("胸ぐらをつかむ (mp3cut.net)_HookHit");
             player.StateTransition(this, new HookHitState());
         }
         // 敵に命中したらEnemyHit状態に遷移
         else if (player.Hook.currentHookState == HookSystem.HookState.EnemyHit)
         {
+            SoundManager.Instance.PlaySE("胸ぐらをつかむ (mp3cut.net)_HookHit");
             player.StateTransition(this, new HookAttackState());
         }
         // -----------------------------------------------

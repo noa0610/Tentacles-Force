@@ -33,6 +33,8 @@ public class HookAttackState : IPlayerState
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+        
         _exitTime += Time.deltaTime;
         
         player.Move.TowardsRotation(enemy.transform, 90); // +90で敵と垂直の向き

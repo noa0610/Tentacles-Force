@@ -16,6 +16,8 @@ public class JumpState : IPlayerState
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+        
         _exitTime += Time.deltaTime;
 
         // 現在の速度を取得

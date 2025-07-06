@@ -43,21 +43,25 @@ public class CameraMove : MonoBehaviour
 
     void LateUpdate()
     {
-        if (PLAYER != null)
+        // ゲーム中だけ処理を行う
+        if (GameManager.Instance.CurrentGameState == GameState.Game)
         {
-            // プレイヤーの位置にオフセットを適用し、ターゲット位置を設定
-            desiredPosition = PLAYER.transform.position + OFFSET;
+            if (PLAYER != null)
+            {
+                // プレイヤーの位置にオフセットを適用し、ターゲット位置を設定
+                desiredPosition = PLAYER.transform.position + OFFSET;
+            }
+
+            // ステージの境界内にカメラの位置を制限する
+            desiredPosition.x = Mathf.Clamp(desiredPosition.x, MinX, MaxX);
+            desiredPosition.y = Mathf.Clamp(desiredPosition.y, MinY, MaxY);
+
+            // 現在のカメラ位置からターゲット位置への移動を滑らかにする
+            Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, SmoothSpeed);
+            transform.position = smoothedPosition;
         }
-
-        // ステージの境界内にカメラの位置を制限する
-        desiredPosition.x = Mathf.Clamp(desiredPosition.x, MinX, MaxX);
-        desiredPosition.y = Mathf.Clamp(desiredPosition.y, MinY, MaxY);
-
-        // 現在のカメラ位置からターゲット位置への移動を滑らかにする
-        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, SmoothSpeed);
-        transform.position = smoothedPosition;
     }
-    
+
     void OnDrawGizmosSelected()
     {
         // カメラの映し出せる制限範囲を描画

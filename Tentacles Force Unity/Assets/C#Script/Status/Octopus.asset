@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Octopus
   m_EditorClassIdentifier: 
   unitName: Octopus
-  maxHealth: 20
+  maxHealth: 10
   attackPower: 2
   defensePower: 0
   unitTags: 1

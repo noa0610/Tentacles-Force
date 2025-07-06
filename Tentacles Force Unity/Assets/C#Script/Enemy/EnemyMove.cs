@@ -46,6 +46,7 @@ public class EnemyMove : MonoBehaviour
     private Vector3 idleCenterPos; // 往復移動の中心位置
     private float ExitTimer = 0f; // ステート遷移のタイマー
     private Rigidbody2D _rigidbody2D;
+    private Collider2D _collider2D;
     private Animator _animator;
     private SpriteRenderer _spriteRenderer;
     private UnitBase _unitBase;
@@ -55,6 +56,7 @@ public class EnemyMove : MonoBehaviour
     void Awake()
     {
         _rigidbody2D = GetComponent<Rigidbody2D>();
+        _collider2D = GetComponent<Collider2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _animator = GetComponent<Animator>();
         _unitBase = GetComponent<UnitBase>();
@@ -260,6 +262,7 @@ public class EnemyMove : MonoBehaviour
         else if (newState == EnemyState.Dead)
         {
             _rigidbody2D.velocity = Vector2.zero; // 速度をゼロにする
+            _collider2D.enabled = false; // コライダーをオフ
             _animator.SetTrigger("Dead"); // 死亡アニメーションをトリガーする
             Destroy(gameObject, 2f); // 2秒後にオブジェクトを削除
         }

@@ -13,10 +13,13 @@ public class HookHitState : IPlayerState
         }
         // フックを命中検知した位置で固定
         player.Hook.HitPosisionStay();
+        Debug.Log("SE");
     }
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+        
         // 現在の速度を取得
         player.Move.GetVelocity();
 
@@ -50,10 +53,18 @@ public class HookHitState : IPlayerState
             player.Hook.HitUpdate();
         }
         // ================================================フックジャンプ
-        // マウス左入力が外れた時
+        // マウス左入力が外れたか、フックの長さが限界に達したら
         else if (!input.MouseLeft)
         {
-            // フックを巻き戻す
+            player.Hook.StartRewind();
+            player.Anime.Animator.SetBool("HookJump", true);
+            player.Anime.Animator.SetBool("Move_Fire", false);
+            player.Anime.Animator.SetBool("Idle_Fire", false);
+            player.StateTransition(this, new HookJumpState());
+        }
+
+        if (player.Hook.IsHookHitLengthLimit())
+        {
             player.Hook.StartRewind();
             player.Anime.Animator.SetBool("HookJump", true);
             player.Anime.Animator.SetBool("Move_Fire", false);
@@ -62,13 +73,13 @@ public class HookHitState : IPlayerState
         }
         // -----------------------------------------------
 
-        // ================================================フック巻き戻し
-        // マウス右を押すとフックの巻き戻し
-        if (input.MouseRight)
-        {
-            player.Hook.StartRewind(); // フックを巻き戻す
-            player.StateTransition(this, new GroundMoveState());
-        }
+            // ================================================フック巻き戻し
+            // マウス右を押すとフックの巻き戻し
+            if (input.MouseRight)
+            {
+                player.Hook.StartRewind(); // フックを巻き戻す
+                player.StateTransition(this, new GroundMoveState());
+            }
         // -----------------------------------------------
 
         // ================================================空中移動の移行

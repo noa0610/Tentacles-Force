@@ -14,6 +14,8 @@ public class AirMoveState : IPlayerState
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+        
         player.Move.GetVelocity(); // 現在の速度を取得
 
         // ================================================空中移動の入力

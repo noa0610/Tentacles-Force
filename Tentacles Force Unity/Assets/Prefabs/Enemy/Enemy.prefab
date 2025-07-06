@@ -274,7 +274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackData:
-    power: 3
+    power: 1
     range: 0
     duration: 0
     knockbackPower: 2

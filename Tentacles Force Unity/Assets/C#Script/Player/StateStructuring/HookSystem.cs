@@ -241,7 +241,7 @@ public class HookSystem : MonoBehaviour
     public void HitUpdate()
     {
         if (GetHookDistance() >= HookHitLengthMax)
-        { 
+        {
             isHookHitMaxLength = true; // フックがヒットした最大距離に達したことを記録
         }
 
@@ -404,6 +404,11 @@ public class HookSystem : MonoBehaviour
     public Vector2 GetHookDirection()
     {
         return (hookTargetPosition - transform.position).normalized;
+    }
+
+    public bool IsHookHitLengthLimit()
+    {
+        return GetHookDistance() >= HookHitLengthMax + 3;
     }
 
 }

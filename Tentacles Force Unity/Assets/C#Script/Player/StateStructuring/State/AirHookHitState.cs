@@ -14,10 +14,13 @@ public class AirHookHitState : IPlayerState
         // フックを命中検知した位置で固定
         player.Hook.HitPosisionStay();
         player.Anime.Animator.SetBool("Fall_Fire", true);
+        SoundManager.Instance.PlaySE("胸ぐらをつかむ_HookHit");
     }
 
     public void Execute(Player2 player, InputInformation input)
     {
+        player.ChackDead();
+        
         // 現在の速度を取得
         player.Move.GetVelocity();
 
@@ -51,13 +54,20 @@ public class AirHookHitState : IPlayerState
             player.Anime.Animator.SetBool("Fall_Fire", false);
             player.StateTransition(this, new HookJumpState());
         }
+        
+        if (player.Hook.IsHookHitLengthLimit())
+        {
+            player.Hook.StartRewind();
+            player.Anime.Animator.SetBool("Fall_Fire", false);
+            player.StateTransition(this, new HookJumpState());
+        }
         // -----------------------------------------------
 
 
         // ================================================フック巻き戻し
         if (input.MouseRight) // マウス右を押すとフックの巻き戻し
         {
-            player.Hook.StartRewind(); 
+            player.Hook.StartRewind();
             player.Anime.Animator.SetBool("Fall_Fire", false);
             player.StateTransition(this, new AirMoveState());
         }

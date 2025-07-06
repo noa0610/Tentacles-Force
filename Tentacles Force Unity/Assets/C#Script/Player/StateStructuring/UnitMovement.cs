@@ -195,6 +195,11 @@ public class UnitMovement : MonoBehaviour
         this.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle + angleOffset));
     }
 
+    public void SetRotation(Quaternion rotato)
+    {
+        this.transform.rotation = rotato;
+    }
+
     public void ResetRotation()
     {
         this.transform.rotation = _startRotation; // 初期の回転に戻す
