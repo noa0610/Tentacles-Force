@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 地上移動のステート
 /// </summary>
-public class GroundMoveState : IPlayerState
+public class GroundMoveState : IState<Player2>
 {
     public void Enter(Player2 player)
     {

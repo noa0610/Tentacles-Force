@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class Player2 : MonoBehaviour
 {
-    public PlayerStateManager _stateManager;
+    public StateManager<Player2> _stateManager;
     public HookSystem Hook { get; private set; }
     public UnitMovement Move { get; private set; }
     public PlayerAnimation Anime { get; private set; }
@@ -37,10 +37,10 @@ public class Player2 : MonoBehaviour
             Debug.LogError("HookSystem is not attached to the Player2 GameObject.");
         }
 
-        _stateManager = new PlayerStateManager();
+        _stateManager = new StateManager<Player2>();
         if (Hook != null)
         {
-            _stateManager.Init(this);
+            _stateManager.Init(this, new GroundMoveState());
         }
         else
         {
@@ -66,7 +66,7 @@ public class Player2 : MonoBehaviour
     /// </summary>
     /// <param name="fromState"></param>
     /// <param name="nextState"></param>
-    public void StateTransition(IPlayerState fromState, IPlayerState nextState)
+    public void StateTransition(IState<Player2> fromState, IState<Player2> nextState)
     {
         _stateManager.Transition(this, fromState, nextState);
     }

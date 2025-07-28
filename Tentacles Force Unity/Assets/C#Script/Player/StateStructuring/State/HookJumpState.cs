@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HookJumpState : IPlayerState
+public class HookJumpState : IState<Player2>
 {
     float _exitTime = 0;
     float _maxExitTime = 0.5f; // ジャンプの持続時間

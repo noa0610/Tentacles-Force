@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DeadFallState : IPlayerState
+public class DeadFallState : IState<Player2>
 {
     private float _exitTime = 0;
     private float _maxExitTime = 2f; // 持続時間

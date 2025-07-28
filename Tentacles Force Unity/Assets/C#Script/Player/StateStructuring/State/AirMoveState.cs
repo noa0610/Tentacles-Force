@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 空中の移動のステート
 /// </summary>
-public class AirMoveState : IPlayerState
+public class AirMoveState : IState<Player2>
 {
     public void Enter(Player2 player)
     {

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HookHitState : IPlayerState
+public class HookHitState : IState<Player2>
 {
     public void Enter(Player2 player)
     {

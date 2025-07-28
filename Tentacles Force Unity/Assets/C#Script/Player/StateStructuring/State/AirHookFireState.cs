@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AirHookFireState : IPlayerState
+public class AirHookFireState : IState<Player2>
 {
     float time = 0; // 時間計測用変数
     public void Enter(Player2 player)

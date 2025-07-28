@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HookAttackState : IPlayerState
+public class HookAttackState : IState<Player2>
 {
     private GameObject enemy; // 敵のGameObjectを保持する変数
     private float _exitTime = 0f; // 攻撃の経過時間

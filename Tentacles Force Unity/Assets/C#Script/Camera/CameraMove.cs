@@ -44,8 +44,8 @@ public class CameraMove : MonoBehaviour
     void LateUpdate()
     {
         // ゲーム中だけ処理を行う
-        if (GameManager.Instance.CurrentGameState == GameState.Game)
-        {
+        // if (GameManager.Instance.CurrentGameState == GameState.Game)
+        // {
             if (PLAYER != null)
             {
                 // プレイヤーの位置にオフセットを適用し、ターゲット位置を設定
@@ -59,7 +59,7 @@ public class CameraMove : MonoBehaviour
             // 現在のカメラ位置からターゲット位置への移動を滑らかにする
             Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, SmoothSpeed);
             transform.position = smoothedPosition;
-        }
+        // }
     }
 
     void OnDrawGizmosSelected()
