@@ -273,6 +273,7 @@ public class EnemyMove : MonoBehaviour
         {
             /** 追加機能 */
             _onDefeated.OnNext(Unit.Default); // 撃破を通知
+            MessageBroker.Default.Publish(new EnemyDefeatedMessage(scoreValue, transform.position));
             _onDefeated.OnCompleted(); // 購読終了
             /**         */
 
@@ -449,5 +450,18 @@ public class EnemyMove : MonoBehaviour
 
         // 直線攻撃速度で移動
         _rigidbody2D.velocity = direction * StraightAttackSpeed;
+    }
+}
+
+// イベント用のメッセージクラス
+public class EnemyDefeatedMessage
+{
+    public int ScoreValue;
+    public Vector3 Position;
+
+    public EnemyDefeatedMessage(int score, Vector3 position)
+    {
+        ScoreValue = score;
+        Position = position;
     }
 }

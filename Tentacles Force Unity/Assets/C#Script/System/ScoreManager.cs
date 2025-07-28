@@ -14,16 +14,28 @@ public class ScoreManager : MonoBehaviour
     // 他クラスからスコアを購読できるプロパティ
     public IReadOnlyReactiveProperty<int> Score => _score;
 
-    public void RegisterEnemy(EnemyMove enemy)
+    private void Start()
     {
-        enemy.OnDefeated
-            .Subscribe(_ =>
+        MessageBroker.Default
+            .Receive<EnemyDefeatedMessage>()
+            .Subscribe(msg =>
             {
-                _score.Value += enemy.scoreValue;
-                Debug.Log("スコア加算！ 現在のスコア: " + _score.Value);
+                _score.Value += msg.ScoreValue;
+                Debug.Log($"スコア加算: +{msg.ScoreValue} 現在のスコア: {_score.Value}");
             })
-            .AddTo(this); // 破棄管理
-
-        // Enemyに直接アクセスしていない、イベントのみ受け取る
+            .AddTo(this);
     }
+
+    // public void RegisterEnemy(EnemyMove enemy)
+    // {
+    //     enemy.OnDefeated
+    //         .Subscribe(_ =>
+    //         {
+    //             _score.Value += enemy.scoreValue;
+    //             Debug.Log("スコア加算！ 現在のスコア: " + _score.Value);
+    //         })
+    //         .AddTo(this); // 破棄管理
+
+    //     // Enemyに直接アクセスしていない、イベントのみ受け取る
+    // }
 }

@@ -69,8 +69,8 @@ public class EnemySpwner : MonoBehaviour
     {
         var enemyObj = Instantiate(enemyPrefab, transform.position, Quaternion.identity);
         _hasSpawned = true;
-        var enemy = enemyObj.GetComponent<EnemyMove>();
-        scoreManager.RegisterEnemy(enemy); // 生成したEnemyをScoreManagerに登録
+        // var enemy = enemyObj.GetComponent<EnemyMove>();
+        // scoreManager.RegisterEnemy(enemy); // 生成したEnemyをScoreManagerに登録
         if (_spawnOnce)
         {
             Destroy(gameObject);
