@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using UniRx;
 using UnityEngine;
 
 /* 索敵を行いターゲットを追尾する敵の移動スクリプト
@@ -29,6 +31,14 @@ public class EnemyMove : MonoBehaviour
 
     [Header("最初の向き設定")]
     [SerializeField] private bool StartDirectionRight = true; // 初期の向き（右方向）
+
+    /** 追加機能  */
+    // 撃破されたことを通知するSubject
+    private readonly Subject<Unit> _onDefeated = new Subject<Unit>();
+    // イベントを外部に公開する仕組み
+    public IObservable<Unit> OnDefeated => _onDefeated;
+    public int scoreValue = 100;
+    /**          */
 
 
     // 内部処理する変数
@@ -261,6 +271,12 @@ public class EnemyMove : MonoBehaviour
         }
         else if (newState == EnemyState.Dead)
         {
+            /** 追加機能 */
+            _onDefeated.OnNext(Unit.Default); // 撃破を通知
+            MessageBroker.Default.Publish(new EnemyDefeatedMessage(scoreValue, transform.position));
+            _onDefeated.OnCompleted(); // 購読終了
+            /**         */
+
             _rigidbody2D.velocity = Vector2.zero; // 速度をゼロにする
             _collider2D.enabled = false; // コライダーをオフ
             _animator.SetTrigger("Dead"); // 死亡アニメーションをトリガーする
@@ -434,5 +450,18 @@ public class EnemyMove : MonoBehaviour
 
         // 直線攻撃速度で移動
         _rigidbody2D.velocity = direction * StraightAttackSpeed;
+    }
+}
+
+// イベント用のメッセージクラス
+public class EnemyDefeatedMessage
+{
+    public int ScoreValue;
+    public Vector3 Position;
+
+    public EnemyDefeatedMessage(int score, Vector3 position)
+    {
+        ScoreValue = score;
+        Position = position;
     }
 }
